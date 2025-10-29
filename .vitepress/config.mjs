@@ -85,7 +85,7 @@ export default defineConfig({
 		},
 
 		footer: {
-			copyright: `Copyright © ${year}, <a href="/about/">Duck Dev LLP</a>.`,
+			copyright: `Copyright © ${year}, <a href="/about/">Duck Dev LLP</a>. All rights reserved.`,
 		},
 	}
 })
