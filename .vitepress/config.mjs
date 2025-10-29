@@ -64,7 +64,7 @@ export default defineConfig({
 				]
 			},
 			{
-				text: 'About Duck Dev',
+				text: 'About Us',
 				link: '/about',
 			},
 		],
