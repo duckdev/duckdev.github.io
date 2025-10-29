@@ -5,7 +5,7 @@ title: Installing an Add-on
 
 # 📦 Installing an Add-on
 
-You can view the list of available add-ons [here](http://localhost/duckdev/wordpress/duckdev/addons/loggedin/) or on the plugin admin page.
+You can view the list of available add-ons [here](https://duckdev.com/addons/loggedin/) or on the plugin admin page.
 
 ::: tip Important
 The **Loggedin** plugin must be installed and active for the add-on to work.
