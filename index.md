@@ -13,7 +13,7 @@ hero:
       text: Get Support
       link: 'https://duckdev.com/contact/'
   image:
-    src: /folders.svg
+    src: /doc.svg
 
 features:
   - title: General
