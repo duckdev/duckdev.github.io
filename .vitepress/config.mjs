@@ -54,6 +54,8 @@ export default defineConfig({
 				text: '404 to 301',
 				items: [
 					{ text: 'Settings', link: '/404-to-301/settings' },
+					{ text: 'Custom Options', link: '/404-to-301/custom-options' },
+					{ text: 'Error Log Listing', link: '/404-to-301/error-log-listing' },
 					{ text: 'Translation', link: '/404-to-301/translating' },
 				]
 			},
