@@ -6,7 +6,7 @@ title: Custom Options for Individual 404 Errors
 
 Tired of one-size-fits-all? While global settings for 404 notifications and redirects are useful, you can also customize options for each individual 404 error link.
 
-### How to Customize:
+## How to Customize:
 
 1. Log in and navigate to the Error Log Listing page in your dashboard.
 2. Locate the last column for the specific error log you want to modify.

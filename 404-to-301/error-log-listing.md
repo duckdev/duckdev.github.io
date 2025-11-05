@@ -1,15 +1,18 @@
 ---
-title: Modifying Error Log Listing Parameters
+title: Number of Error Logs Per Page
 ---
 
-# Modifying Error Log Listing Parameters
+# 📝 Number of Error Logs Per Page
 
-The default configuration for the 404 error log reporting interface is set to display 20 log entries per page. Pagination controls are rendered when the total volume of error logs exceeds this predefined limit.
+The default setting for the 404 error logs listing page displays 20 errors per page. Pagination controls are automatically activated when the total number of errors exceeds this limit.
 
-**To override the default log entry density:**
+You have the ability to modify the display quantity by accessing the Screen Options panel.
+
+## Changing Pagination Value
 
 1. Navigate to the 404 error logs listing page.
-2. Select the **Screen Options** control located at the upper-right corner of the interface.
-3. Within the Pagination configuration field set, adjust the **Number of items per page** value to the required density parameter.
-4. Execute the change by clicking **Apply**.
-5. The user interface will now dynamically update, rendering log data consistent with the new entries-per-page parameter.
+2. Click on the **Screen Options** tab located at the Top Right of the page.
+3. Within the settings panel that appears, locate the **Pagination** section.
+4. Increase or decrease the value in the input field to set the desired quantity of error logs per page.
+5. Click **Apply** to save the changes.
+6. The listing page will immediately update to reflect the new pagination setting.
