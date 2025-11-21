@@ -14,6 +14,18 @@ export default defineConfig({
 				rel: 'icon',
 				href: '/icon.png',
 			},
+		],
+		[
+			'script',
+			{ async: '', src: 'https://www.googletagmanager.com/gtag/js?id=G-5SN0WR5ETP' }
+		],
+		[
+			'script',
+			{},
+			`window.dataLayer = window.dataLayer || [];
+			function gtag(){dataLayer.push(arguments);}
+			gtag('js', new Date());
+			gtag('config', 'G-5SN0WR5ETP');`
 		]
 	],
 	themeConfig: {
