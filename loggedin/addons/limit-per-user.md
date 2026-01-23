@@ -12,6 +12,6 @@ This addon does not have any settings in the main Loggedin admin dashboard. Inst
 
 ## Concurrent Sessions Limit
 
-This setting is a text field that accepts only numbers greater than 1.
-
 Use this field to set the maximum number of concurrent sessions for a specific user. The limit you set here will apply only to this user and will override any global concurrent session limit configured in the main Loggedin plugin settings.
+
+If you set the limit to 0 or leave it empty, the user will default to the global limit.
