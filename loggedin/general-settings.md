@@ -27,7 +27,9 @@ This is a radio button input, allowing you to select only one option.
 ### Logout Oldest
 A new login will automatically terminate the single oldest active session. This means a user can always log in, but it will log them out of their oldest active device or browser.
 
-Note: This feature requires the user meta session storage method.
+::: info Note
+By default, WordPress stores user session details in the `usermeta` table. However, this can be changed by plugins that use external memory stores like **Redis** or **Memcached**. The "Logout Oldest" method works only if sessions are stored in the `usermeta` table, so it should function correctly unless you are using a third-party plugin or service to handle session data.
+:::
 
 ### Logout All
 If the concurrent login limit is met, a new successful login will automatically end all previously active sessions for that user, effectively making the new login the only active one.
