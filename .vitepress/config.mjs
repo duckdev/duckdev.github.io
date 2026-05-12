@@ -58,6 +58,7 @@ export default defineConfig({
 						items: [
 							{ text: 'Realtime Logout', link: '/realtime-logout' },
 							{ text: 'Limit Per User', link: '/limit-per-user' },
+							{ text: 'Limit Per Role', link: '/limit-per-role' },
 						]
 					}
 				]
