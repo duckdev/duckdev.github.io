@@ -75,7 +75,8 @@ export default defineConfig({
 			{
 				text: 'Lazy Load for Comments',
 				items: [
-					{ text: 'Settings', link: '/lazy-load-for-comments/settings' },
+					{ text: 'General Settings', link: '/lazy-load-for-comments/general' },
+					{ text: 'Load Button', link: '/lazy-load-for-comments/load-button' },
 				]
 			},
 			{
