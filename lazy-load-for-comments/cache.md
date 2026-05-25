@@ -4,7 +4,7 @@ title: Cache Management
 
 # Cache Management
 
-The Cache section lets you control how Lazy Load for Comments stores the rendered comments markup, and gives you a quick way to clear it. You can find it under **Comments → Lazy Load** in your WordPress admin, on the **General** tab.
+The Cache section lets you control how Lazy Load for Comments stores the rendered comments markup, and gives you a quick way to clear it. You can find it under **Comments → Lazy Load** in your WordPress admin, inside the **Cache** section of the settings page.
 
 [![Cache Management](/lazy-load-for-comments/cache.png)](/lazy-load-for-comments/cache.png)
 

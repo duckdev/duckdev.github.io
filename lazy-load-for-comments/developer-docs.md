@@ -312,7 +312,7 @@ script to fetch the comments on click or scroll.
 
 Clears every cached comments-block transient.
 
-* **Permission:** `manage_options`.
+* **Permission:** routed through `DuckDev\LazyComments\Utils\Permission::has_access()` — defaults to `manage_options`, filterable via [`lazy_load_for_comments_capability`](#lazy-load-for-comments-capability) and [`lazy_load_for_comments_has_access`](#lazy-load-for-comments-has-access).
 * **Response (200):** `{ "success": true, "message": "Comments cache cleared." }`
 
 ## Placeholder helper

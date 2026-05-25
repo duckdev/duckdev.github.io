@@ -1,12 +1,12 @@
 ---
-title: General Settings
+title: Loading Behaviour
 ---
 
-# General Settings
+# Loading Behaviour
 
-The General Settings section controls how and when comments are lazy loaded on your posts and pages. You can find it under **Comments → Lazy Load** in your WordPress admin, on the **General** tab.
+The Loading Behaviour section controls how and when comments are lazy loaded on your posts and pages. You can find it under **Comments → Lazy Load** in your WordPress admin, inside the **Loading Behaviour** section of the settings page.
 
-[![General Settings](/lazy-load-for-comments/general-settings.png)](/lazy-load-for-comments/general-settings.png)
+[![Loading Behaviour](/lazy-load-for-comments/loading-behaviour.png)](/lazy-load-for-comments/loading-behaviour.png)
 
 ## Load Method
 
@@ -18,7 +18,7 @@ This is a dropdown (select) input with three options:
 Comments are loaded automatically as soon as the visitor scrolls down close to the comments area. This is the default option and gives the smoothest experience.
 
 ### On Button Click
-Comments are not loaded until the visitor clicks the **Load Comments** button. The button can be customised on the [Load Button Settings](./load-button) tab.
+Comments are not loaded until the visitor clicks the **Load Comments** button. The button can be customised in the [Load Button](./load-button) section.
 
 ### Disabled (load normally)
 Lazy loading is turned off completely. Comments load together with the rest of the page, exactly like the default WordPress behaviour.

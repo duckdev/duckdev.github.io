@@ -75,7 +75,7 @@ export default defineConfig({
 			{
 				text: 'Lazy Load for Comments',
 				items: [
-					{ text: 'General Settings', link: '/lazy-load-for-comments/general' },
+					{ text: 'Loading Behaviour', link: '/lazy-load-for-comments/loading-behaviour' },
 					{ text: 'Load Button', link: '/lazy-load-for-comments/load-button' },
 					{ text: 'Cache Management', link: '/lazy-load-for-comments/cache' },
 					{ text: 'Developer Docs', link: '/lazy-load-for-comments/developer-docs' },
