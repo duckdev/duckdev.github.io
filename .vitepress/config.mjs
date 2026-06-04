@@ -66,10 +66,20 @@ export default defineConfig({
 			{
 				text: '404 to 301',
 				items: [
-					{ text: 'Settings', link: '/404-to-301/settings' },
-					{ text: 'Custom Options', link: '/404-to-301/custom-options' },
-					{ text: 'Error Log Listing', link: '/404-to-301/error-log-listing' },
-					{ text: 'Translation', link: '/404-to-301/translating' },
+					{ text: 'Getting Started', link: '/404-to-301/getting-started' },
+					{
+						text: 'Settings',
+						items: [
+							{ text: 'General', link: '/404-to-301/general-settings' },
+							{ text: 'Redirects', link: '/404-to-301/redirect-settings' },
+							{ text: 'Logs', link: '/404-to-301/log-settings' },
+							{ text: 'Notifications', link: '/404-to-301/notification-settings' },
+						]
+					},
+					{ text: 'Redirects', link: '/404-to-301/redirects' },
+					{ text: 'Logs', link: '/404-to-301/logs' },
+					{ text: 'WP-CLI', link: '/404-to-301/wp-cli' },
+					{ text: 'Developer Docs', link: '/404-to-301/developer-docs' },
 				]
 			},
 			{

@@ -4,12 +4,12 @@ description: 404 to 301 — WordPress plugin documentation.
 head:
   - - meta
     - http-equiv: refresh
-      content: 0; url=/404-to-301/settings
+      content: 0; url=/404-to-301/getting-started
   - - link
     - rel: canonical
-      href: https://docs.duckdev.com/404-to-301/settings
+      href: https://docs.duckdev.com/404-to-301/getting-started
 ---
 
 # 404 to 301
 
-Redirecting to [Settings](/404-to-301/settings)…
+Redirecting to [Getting Started](/404-to-301/getting-started)…
