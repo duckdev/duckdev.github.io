@@ -19,10 +19,11 @@ Once active, the add-on adds an **Import redirects** panel to the
   columns for type and match mode). Ideal for migrating from a spreadsheet
   or a plugin that can export CSV.
 - **Another redirect plugin** — migrate existing redirects directly from a
-  plugin already installed on the site, including **Redirection**,
-  **Rank Math**, and **Yoast SEO Premium**. The importer reads their stored
-  redirects and recreates them as native 404 to 301 rules — no export step
-  in between.
+  plugin already installed on the site. Currently supported sources:
+  **Redirection** (by John Godley) and **301 Redirects** (by Webcraftic).
+  The importer reads their stored redirects and recreates them as native
+  404 to 301 rules — no export step in between. More source plugins may
+  be added in future releases.
 
 ## How it works
 

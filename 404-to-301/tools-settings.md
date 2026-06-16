@@ -68,5 +68,5 @@ For the REST surface behind these buttons (and for the
 When the **[Redirects Importer](/404-to-301/addons/redirects-importer)**
 add-on is active it adds an **Import redirects** panel here — bulk-import
 custom redirects from a CSV file, or migrate them in from another redirect
-plugin (Redirection, Rank Math, Yoast) without re-entering each rule by
+plugin (Redirection, 301 Redirects) without re-entering each rule by
 hand. See the [Add-ons](/404-to-301/addons/) section for the full list.
