@@ -130,7 +130,8 @@ of redirects in the deactivated state, then flip them all on at go-live.
 ## Bulk importing
 
 To create many redirects at once — from a CSV file or migrated from another
-redirect plugin (Redirection, 301 Redirects) — install the
+redirect plugin (Redirection by John Godley, 301 Redirects – Redirect
+Manager by WebFactory) — install the
 **[Redirects Importer](/404-to-301/addons/redirects-importer)** add-on,
 which adds an import panel to the [Tools tab](/404-to-301/tools-settings).
 

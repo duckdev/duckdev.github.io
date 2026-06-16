@@ -68,5 +68,6 @@ For the REST surface behind these buttons (and for the
 When the **[Redirects Importer](/404-to-301/addons/redirects-importer)**
 add-on is active it adds an **Import redirects** panel here — bulk-import
 custom redirects from a CSV file, or migrate them in from another redirect
-plugin (Redirection, 301 Redirects) without re-entering each rule by
-hand. See the [Add-ons](/404-to-301/addons/) section for the full list.
+plugin (Redirection by John Godley, 301 Redirects – Redirect Manager by
+WebFactory) without re-entering each rule by hand. See the
+[Add-ons](/404-to-301/addons/) section for the full list.
