@@ -74,10 +74,35 @@ export default defineConfig({
 							{ text: 'Redirects', link: '/404-to-301/redirect-settings' },
 							{ text: 'Logs', link: '/404-to-301/log-settings' },
 							{ text: 'Notifications', link: '/404-to-301/notification-settings' },
+							{ text: 'Tools', link: '/404-to-301/tools-settings' },
 						]
 					},
-					{ text: 'Redirects', link: '/404-to-301/redirects' },
-					{ text: 'Logs', link: '/404-to-301/logs' },
+					{
+						text: 'Redirects',
+						items: [
+							{ text: 'Overview', link: '/404-to-301/redirects/' },
+							{ text: 'Match Modes & Query Handling', link: '/404-to-301/redirects/matching' },
+						]
+					},
+					{
+						text: 'Logs',
+						items: [
+							{ text: 'Overview', link: '/404-to-301/logs/' },
+							{ text: 'Log Actions', link: '/404-to-301/logs/actions' },
+						]
+					},
+					{
+						text: 'Add-ons',
+						base: '/404-to-301/addons',
+						items: [
+							{ text: 'Overview', link: '/' },
+							{ text: 'Logs Cleaner', link: '/logs-cleaner' },
+							{ text: 'Logs Exporter', link: '/logs-exporter' },
+							{ text: 'Redirects Importer', link: '/redirects-importer' },
+							{ text: 'Email Reports', link: '/email-reports' },
+							{ text: 'Telegram Alerts', link: '/telegram-alerts' },
+						]
+					},
 					{ text: 'WP-CLI', link: '/404-to-301/wp-cli' },
 					{ text: 'Developer Docs', link: '/404-to-301/developer-docs' },
 				]

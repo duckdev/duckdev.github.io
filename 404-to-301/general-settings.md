@@ -9,37 +9,42 @@ applies to every 404 the plugin sees. None of these options touches the
 list of redirects or the log table directly — they shape how requests reach
 those subsystems in the first place.
 
-The tab is split into two panels: **Behaviour** (four toggles) and
-**Exclude paths** (a repeater).
+The tab is a single **Behaviour** panel with four toggles. Path
+exclusions and settings import/export live on the
+[Tools tab](/404-to-301/tools-settings).
 
 [[toc]]
 
 ## Behaviour
 
-[![Behaviour](/404-to-301/settings/behaviour-settings.png)](/404-to-301/settings/behaviour-settings.png)
+### WordPress URL guessing
 
-### Disable WordPress URL guessing
-
-**Setting key:** `disable_guessing` &middot; **Default:** `On`
+**Setting key:** `disable_guessing` &middot; **Default:** `Light`
 
 WordPress tries to be helpful: when a URL doesn't match any post, it scans
 your content for the closest matching slug and silently 301-redirects the
-visitor there. That's the `redirect_canonical` filter at work.
+visitor there. Same code path (`redirect_canonical()`) also handles
+trailing-slash, case-folding, and attachment-fallback redirects.
 
-With this toggle on, the plugin returns `false` from `redirect_canonical`
-and that guessing is skipped — the request becomes a real 404 and flows
-through the plugin's normal action chain (log → email → redirect).
+Three modes — pick the level of interference you want from the plugin.
+
+| Mode | What it does |
+| --- | --- |
+| **Off** | Leave WordPress alone. All canonical redirects (closest-post, trailing slash, case fix, attachment fallback) keep firing. |
+| **Light** (default) | Block only the closest-post guess. Trailing-slash, case-fix, and attachment fallback still work. The right default for most sites — 404s become accurate without breaking commonly-relied-on URL canonicalisation. |
+| **Strict** | Bypass `redirect_canonical()` entirely. Every kind of WordPress URL guessing is off; only literal-match URLs resolve. |
 
 ::: tip Why this exists
 WordPress's guessing makes 404 reporting unreliable. With guessing on, broken
 links to `/about-uss` silently land on `/about-us` and never appear in your
-logs even though they are mistakes you'd want to fix at the source. Turning
-guessing off makes your 404 data accurate.
+logs even though they are mistakes you'd want to fix at the source. **Light**
+fixes that without breaking the trailing-slash redirect that most themes
+quietly rely on. Choose **Strict** only when you really do want the URL to
+match literally — typically headless / API-driven sites.
 :::
 
-The plugin still honours the `?p=ID` shortlink form — when WordPress is
-resolving a post by numeric ID, the filter is left alone so direct post-ID
-links keep working.
+The plugin always honours the `?p=ID` shortlink form — direct post-ID
+links keep working regardless of the mode.
 
 ### Monitor post slug changes
 
@@ -75,31 +80,22 @@ parameters, etc.) and they shouldn't pollute the log table or trigger
 redirects.
 
 Turn this on if you specifically want to log and act on admin-side 404s
-too. When off, the dispatcher bails the moment `is_admin()` is true.
+too. When off, the dispatcher skips any request bound for the admin area —
+both genuine `is_admin()` requests and 404s for paths under `/wp-admin/`
+that fall through to the front controller (a missing file under
+`/wp-admin/` is served as a normal front-end 404, where `is_admin()`
+would otherwise be `false`).
 
-## Exclude paths
-
-[![Exclude Paths](/404-to-301/settings/exclude-paths.png)](/404-to-301/settings/exclude-paths.png)
-
-**Setting key:** `exclude_paths` &middot; **Default:** empty list
-
-A repeater of substrings. Any 404 whose URL contains any of the listed
-substrings is skipped entirely — no log row, no email, no redirect.
-
-Use it for traffic you know you don't care about:
-
-- `/wp-json/` — REST probes from bots and integrations.
-- `/feed/` — defunct RSS endpoints.
-- `.well-known/` — robots.txt-style discovery probes.
-- `/xmlrpc.php` — legacy XML-RPC noise.
-
-The match is a simple `strpos()` substring check (the URL is normalised
-first), not a regex. Empty rows are dropped at save time, so adding a row
-to type into and leaving it blank is safe.
-
-::: info How matching works
-The check runs in `Request::is_excluded()` and is called at the top of
-every action in the chain — Log, Email and Redirect each ask the request
-whether it's excluded before doing any work. That means an excluded URL
-truly costs the plugin nothing past the substring scan.
+::: tip Browsers cache 301s
+If you change this setting and an admin URL still redirects, clear your
+browser cache or test in a private window — a `301` returned earlier is
+cached by the browser and keeps redirecting client-side regardless of the
+new setting.
 :::
+
+## Moved to the Tools tab
+
+**Exclude paths** and **Import / Export** used to live at the bottom of
+this tab. They've moved to the new
+[Tools tab](/404-to-301/tools-settings) so the General tab can stay
+focused on plugin-wide behaviour toggles.

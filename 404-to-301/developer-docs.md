@@ -21,6 +21,7 @@ DuckDev\FourNotFour\
 ├── Plugin                       Identity helpers (name, version, slug, URL)
 ├── Core                         Boot orchestrator + service locator
 ├── Settings                     Settings CRUD + REST registration
+├── Slug_Monitor                 Auto-redirect on post slug change
 ├── Setup\{Activator, Deactivator, Upgrader}
 ├── Admin\{Menu, Assets, Page, Links}
 ├── Front\{Controller, Request,
@@ -87,7 +88,7 @@ add_action( '404_to_301_request', function ( $request ) {
 } );
 ```
 
-### `404_to_301_404_request`
+### `404_to_301_caught_404`
 
 Same timing as `404_to_301_request` but only fires when the request was
 an actual 404. Use this for analytics integrations that should only
@@ -95,7 +96,8 @@ count true 404s.
 
 ### `404_to_301_pre_redirect`
 
-Fires immediately before the Redirect action calls `wp_safe_redirect()`.
+Fires immediately before the Redirect action issues the redirect (via
+`wp_redirect()`). The Telegram Alerts add-on listens here, for example.
 
 ```php
 add_action( '404_to_301_pre_redirect', function ( $url, $status, $request ) {
@@ -120,6 +122,68 @@ Fires after the notification email has been queued through `wp_mail()`.
 ### `404_to_301_migration_complete`
 
 Fires once the legacy table has been fully migrated and dropped.
+
+### `404_to_301_redirect_audit`
+
+Fires after a redirect row is created, updated, or deleted. Use it to
+stream changes to an activity log, SIEM, or compliance audit trail.
+
+```php
+add_action( '404_to_301_redirect_audit', function ( $action, $id, $user_id, $data ) {
+    // $action  — 'created' | 'updated' | 'deleted'
+    // $id      — redirect row id
+    // $user_id — WP user that made the change; 0 for CLI / cron writes
+    // $data    — sanitised payload that was written (empty array on delete)
+    My\Audit_Stream::record( "redirect.$action", $id, $user_id, $data );
+}, 10, 4 );
+```
+
+The `modified_by` column on the redirects table is the persisted form
+of the same signal — it stores the most recent author so the "Last
+edited by" column in the Redirects table can render without a join.
+Surfaced via the REST API on every shaped row as `modified_by` (int|null)
+and `modified_by_name` (string).
+
+### `404_to_301_settings_updated`
+
+Fires after the settings option is written — for every write path
+(`Settings::update()`, the REST settings endpoint, direct
+`update_option()`). The payload is already sanitised and the previous
+snapshot is passed in, so addons don't have to diff against
+`get_option()` themselves.
+
+```php
+add_action( '404_to_301_settings_updated', function ( $new, $previous ) {
+    if ( ( $new['logs_enabled'] ?? false ) && ! ( $previous['logs_enabled'] ?? false ) ) {
+        // Logging was just turned on — (re)schedule the cleanup cron.
+    }
+}, 10, 2 );
+```
+
+::: tip Prefer this over `updated_option`
+Listening on `updated_option_404_to_301_settings` works, but you get the
+raw option value and have to know it's an array. This action gives you
+two normalised arrays and is the documented contract.
+:::
+
+### `404_to_301_setting_updated_{$key}`
+
+Dynamic, per-key signal for addons that only care about a single
+setting. Fires once per key whose value actually changed — no noise for
+unchanged keys. The hook name suffix is the setting key.
+
+```php
+add_action( '404_to_301_setting_updated_email_enabled', function ( $new, $old ) {
+    if ( $new ) {
+        // Email notifications were turned on.
+    }
+}, 10, 2 );
+```
+
+Both new and old values are passed through. Old is `null` if the key
+did not exist in the previous snapshot — useful when an addon registers
+its own key via [`404_to_301_settings_defaults`](#404-to-301-settings-defaults)
+and wants to react the first time a value is written.
 
 ## Filters
 
@@ -203,10 +267,39 @@ add_filter( '404_to_301_capability', function () {
 } );
 ```
 
+### `404_to_301_doctor_checks`
+
+Filter the grouped check list that `wp 404-to-301 doctor` renders. The
+filter runs after the built-in groups (`cron`, `settings`, `database`)
+have been populated, so addons can append their own group rather than
+mutating existing ones.
+
+Each group is `[ 'label' => string, 'checks' => array<int, [ 'status' => 'pass'|'warn'|'fail', 'message' => string ]> ]`.
+A FAIL on any check trips the doctor's non-zero exit code; WARN
+surfaces in the summary line but doesn't change the exit status.
+
+```php
+add_filter( '404_to_301_doctor_checks', function ( $groups ) {
+    $groups['my_addon'] = array(
+        'label'  => 'My Addon',
+        'checks' => array(
+            array(
+                'status'  => My\Addon::ready() ? 'pass' : 'fail',
+                'message' => 'API key is configured.',
+            ),
+        ),
+    );
+    return $groups;
+} );
+```
+
+Paired filter: `404_to_301_doctor_cron_prefixes` — an array of hook-name
+prefixes that the cron group uses to decide which scheduled events
+belong to the plugin/addons. Default is `[ '404_to_301_' ]`.
+
 ### `404_to_301_redirect_target`
 
-Override the resolved redirect target before `wp_safe_redirect()` is
-called.
+Override the resolved redirect target before the redirect is issued.
 
 ```php
 add_filter( '404_to_301_redirect_target', function ( $payload, $request ) {
@@ -224,6 +317,103 @@ add_filter( '404_to_301_redirect_target', function ( $payload, $request ) {
 
 Customise the list of HTTP status codes allowed on a per-redirect basis.
 Defaults to `[ 301, 302, 307 ]`.
+
+### `404_to_301_use_safe_redirect`
+
+Whether to restrict redirects to the site's own host. Defaults to `false`
+so admin-configured **external** targets work (the plugin uses
+`wp_redirect()`). Return `true` to fall back to `wp_safe_redirect()`
+semantics — useful if you want host-restriction enforced.
+
+```php
+add_filter( '404_to_301_use_safe_redirect', function ( $safe, $url, $request ) {
+    // Only allow same-host redirects for URLs under /members/.
+    if ( str_starts_with( $request->url(), '/members/' ) ) {
+        return true;
+    }
+    return $safe;
+}, 10, 3 );
+```
+
+### `404_to_301_monitor_slug_create`
+
+Gate the **Monitor slug changes** feature per post. Fires when a published
+post's permalink changes and the plugin is about to auto-create a redirect.
+Return `false` to skip a specific post.
+
+```php
+add_filter( '404_to_301_monitor_slug_create', function ( $create, $post_after, $post_before ) {
+    // Don't auto-redirect renamed products — they're handled elsewhere.
+    if ( 'product' === $post_after->post_type ) {
+        return false;
+    }
+    return $create;
+}, 10, 3 );
+```
+
+### `404_to_301_register_addon`
+
+The registration seam for first-party add-ons. An add-on hooks this filter
+to register itself with the parent's add-on / licensing layer, keyed by its
+project id. This is the entry point every add-on uses on `plugins_loaded`.
+
+```php
+add_filter( '404_to_301_register_addon', function ( $addons ) {
+    $addons[ MY_ADDON_ID ] = array(
+        'slug'       => 'my-addon',
+        'main_file'  => plugin_basename( MY_ADDON_FILE ),
+        'public_key' => MY_ADDON_PUBLIC_KEY,
+        'is_premium' => true,
+        'has_addons' => false,
+    );
+    return $addons;
+} );
+```
+
+Add-ons then boot their own subsystems on
+[`404_to_301_init`](#404_to_301_init) and extend the settings store via
+[`404_to_301_settings_defaults`](#404-to-301-settings-defaults) /
+[`404_to_301_settings_rest_schema`](#404-to-301-settings-rest-schema).
+
+### `404_to_301_normalize_url`
+
+Override the canonical form of a URL used for hashing and matching. The
+default policy: reduce a full URL to its path, strip the query string,
+percent-decode the path, strip any trailing slash, lowercase the result,
+make it relative to the site's home path (so subdirectory installs match),
+and guarantee a leading slash. Hook this filter to plug in stricter or
+looser rules without forking the helper.
+
+```php
+// Case-sensitive matching: keep the original casing, but keep every
+// other normalisation step (trailing slash strip, percent-decode, query
+// strip — those are still useful even on case-sensitive sites).
+add_filter( '404_to_301_normalize_url', function ( $normalised, $raw ) {
+    $path = strtok( trim( $raw ), '?' );
+    $path = rawurldecode( (string) $path );
+    if ( strlen( $path ) > 1 && substr( $path, -1 ) === '/' ) {
+        $path = rtrim( $path, '/' );
+    }
+    return $path; // no strtolower()
+}, 10, 2 );
+```
+
+```php
+// Strip a `/en/` or `/fr/` language prefix so a single redirect row
+// covers every locale.
+add_filter( '404_to_301_normalize_url', function ( $normalised ) {
+    return preg_replace( '#^/(en|fr|de)(/|$)#', '/', $normalised );
+} );
+```
+
+::: warning Rehash existing rows when you change the policy
+The output of this filter is what gets SHA1-hashed into `source_hash` on
+write *and* used to look up matches on every 404. If you change the
+policy on a live site, existing rows hashed under the old policy stop
+matching until they're re-saved. Either flip the filter before adding
+rows, or run a one-shot script that re-saves every redirect to refresh
+the hash.
+:::
 
 ### `404_to_301_is_human`
 
@@ -262,7 +452,9 @@ add_filter( '404_to_301_email_payload', function ( $email, $request ) {
 }, 10, 2 );
 ```
 
-`$email` is `[ 'recipient' => string, 'subject' => string, 'body' => string ]`.
+`$email` is `[ 'recipient' => string[], 'subject' => string, 'body' => string ]`.
+`recipient` is an array of validated email addresses; `wp_mail()`
+accepts the array shape directly.
 
 ### Request filters
 
@@ -291,56 +483,209 @@ add_filter( '404_to_301_request_ip', function ( $ip, $request ) {
 
 ## JavaScript hooks
 
-The admin React UI uses `@wordpress/hooks` for two extension points the
-[Logs Cleaner](https://duckdev.com/addons/) add-on uses:
+The admin React UI exposes extension points through `@wordpress/hooks`.
+All JS-side hook names follow:
 
-### `d404.settings.logs.fields`
-
-Append fields to the Error logs settings panel.
-
-```js
-import { addFilter } from '@wordpress/hooks'
-
-addFilter(
-    'd404.settings.logs.fields',
-    'my-addon/extra-log-fields',
-    (existing, { getSetting, setSetting }) => (
-        <>
-            {existing}
-            <MyExtraField
-                value={getSetting('my_addon_enabled', false)}
-                onChange={(v) => setSetting('my_addon_enabled', v)}
-            />
-        </>
-    ),
-)
+```
+d404.<surface>.<area>.<slot>
 ```
 
-### `d404.settings.logs.cross_sell`
-
-Replace or suppress the default cross-sell banner at the bottom of the
-Error logs panel. Return `null` to hide it; return your own React node to
-swap it.
+`d404` — dot-separated — lower-case — no underscores. Stable across minor
+releases.
 
 ::: info Hook names start with a letter
 `@wordpress/hooks` rejects hook names that begin with a digit, which is
 why JS-side filters use the `d404` prefix instead of `404_to_301`.
 :::
 
+### Settings page — extension slots
+
+Every tab in the Settings page exposes two `applyFilters` slots:
+
+| Tab            | Fields slot                              | Cross-sell slot                              |
+| -------------- | ---------------------------------------- | -------------------------------------------- |
+| General        | `d404.settings.general.fields`           | `d404.settings.general.cross_sell`           |
+| Redirects      | `d404.settings.redirects.fields`         | `d404.settings.redirects.cross_sell`         |
+| Logs           | `d404.settings.logs.fields`              | `d404.settings.logs.cross_sell`              |
+| Notifications  | `d404.settings.notifications.fields`     | `d404.settings.notifications.cross_sell`     |
+| Tools          | `d404.settings.tools.fields`             | `d404.settings.tools.cross_sell`             |
+
+#### `…fields` — inject controls
+
+Signature:
+
+```js
+applyFilters(
+    'd404.settings.<tab>.fields',
+    null,                // default: render nothing
+    { getSetting, setSetting },
+)
+```
+
+- Return a single React node, an array of nodes, or `null`.
+- `getSetting(key, fallback)` and `setSetting(key, value)` are the same
+  accessors the built-in fields use — controls injected here participate
+  in the same dirty-state, save, and reset flow as the parent's own
+  fields. Pair the keys you read/write with
+  [`404_to_301_settings_defaults`](#404-to-301-settings-defaults) and
+  [`404_to_301_settings_rest_schema`](#404-to-301-settings-rest-schema)
+  so they round-trip through REST.
+- Rendered at the end of the tab's last `PanelBody` (or after the last
+  `PanelBody`, on the General and Tools tabs).
+
+#### `…cross_sell` — replace or hide the default promo
+
+Signature:
+
+```js
+applyFilters('d404.settings.<tab>.cross_sell', defaultNode)
+```
+
+- `defaultNode` may be `null` (no built-in promo) or a React node — eg.
+  the Logs tab's "Drowning in 404 logs?" Notice.
+- Addons that supersede the promoted feature should return `null` to
+  hide it.
+- Return your own node to replace the promo entirely.
+- Kept separate from `…fields` so an addon that wants to inject fields
+  *without* hiding the promo can do so.
+
+### Example
+
+A minimal addon that adds a toggle to the General tab and hides the
+default promo:
+
+```js
+import { addFilter } from '@wordpress/hooks'
+import { PanelRow, ToggleControl } from '@wordpress/components'
+
+addFilter(
+    'd404.settings.general.fields',
+    'my-addon/general-extra',
+    (_node, { getSetting, setSetting }) => (
+        <PanelRow>
+            <ToggleControl
+                __nextHasNoMarginBottom
+                label="My addon toggle"
+                checked={!!getSetting('my_addon_toggle', false)}
+                onChange={(v) => setSetting('my_addon_toggle', v)}
+            />
+        </PanelRow>
+    ),
+)
+
+addFilter(
+    'd404.settings.general.cross_sell',
+    'my-addon/general-cross-sell',
+    () => null,
+)
+```
+
+### Loading addon JS on the Settings page
+
+The parent enqueues `404-to-301-settings` on the Settings page. Addons
+that want to inject UI here should enqueue their own script with that
+handle as a dependency so the filter is in scope by the time the addon
+registers its callback:
+
+```php
+wp_enqueue_script(
+    'my-addon-settings',
+    plugins_url( 'build/settings.js', __FILE__ ),
+    array( '404-to-301-settings', 'wp-hooks', 'wp-element', 'wp-components', 'wp-i18n' ),
+    MY_ADDON_VERSION,
+    true
+);
+```
+
 ## REST API
 
 All endpoints live under `/wp-json/d404/v1/`:
 
-- `GET/POST /redirects` — list / create redirects.
-- `GET/POST/DELETE /redirects/<id>` — single redirect.
-- `GET /logs`, `GET/POST/DELETE /logs/<id>` — logs.
+- `GET/POST/DELETE /redirects` — list / create / bulk-delete redirects.
+- `POST /redirects/bulk-update` — apply a column change to many rows at once.
+- `GET/PATCH/DELETE /redirects/<id>` — single redirect.
+- `GET/DELETE /logs` — list / bulk-delete logs.
+- `POST /logs/bulk-update` — flip the status on many rows at once.
+- `GET/PATCH/DELETE /logs/<id>` — single log.
 - `GET/PATCH /settings` — read or update settings (also bridged through
   `/wp/v2/settings` for use with the WP core React hooks).
+- `GET /settings/export` — JSON envelope of every user-facing setting.
+- `POST /settings/import` — apply a previously-exported envelope.
 - `GET/POST /migration` — drive the v3 → v4 migration.
 - `GET /addons` — the add-on catalog.
 
 The endpoints require the capability returned by `404_to_301_capability`
 (defaults to `manage_options`).
+
+### Bulk endpoints
+
+Both `bulk-update` endpoints follow the same shape: a required `ids`
+array plus a curated subset of writable fields. Any field not in the
+payload is left untouched on the matched rows. Passing no mutating
+fields is a no-op that returns `{ updated: 0 }`.
+
+```http
+POST /wp-json/d404/v1/redirects/bulk-update
+Content-Type: application/json
+
+{ "ids": [12, 13, 14], "is_active": false }
+```
+
+```http
+POST /wp-json/d404/v1/logs/bulk-update
+Content-Type: application/json
+
+{ "ids": [101, 102], "status": 2 }
+```
+
+`/redirects/bulk-update` accepts `is_active` and `redirect_type` — bulk
+rewriting `source` or `target_url` is not supported because every row
+would end up identical. For richer bulk imports / exports use WP-CLI.
+
+### Settings import / export
+
+`GET /settings/export` returns the current settings as a JSON envelope:
+
+```json
+{
+    "plugin": "404-to-301",
+    "schema_version": 1,
+    "plugin_version": "4.0.0",
+    "exported_at": "2026-06-05T10:00:00+00:00",
+    "site_url": "https://example.com",
+    "settings": {
+        "disable_guessing": "light",
+        "redirect_enabled": true,
+        "redirect_type": "301"
+    }
+}
+```
+
+`POST /settings/import` accepts either the full envelope or just the
+`settings` object (the importer detects which). The payload goes
+through `Settings::update()` so every key is sanitised by the existing
+pipeline; unknown keys are dropped silently — an envelope from a newer
+plugin version downgrades gracefully on an older site.
+
+```http
+POST /wp-json/d404/v1/settings/import
+Content-Type: application/json
+
+{ "settings": { "disable_guessing": "strict" } }
+```
+
+Install-specific keys (`plugin_version`, `db_version`, `logs_migrated`,
+`phase1_done`, `legacy_table_dropped`) are stripped from both
+directions — they're install state, not portable settings.
+
+Two filters bracket the round-trip:
+
+- `404_to_301_settings_export( $envelope )` — last chance to add or
+  redact keys before the JSON goes out. Addons whose state lives
+  outside the plugin's option can append to the envelope here.
+- `404_to_301_settings_import( $incoming, $raw_body )` — last chance
+  to transform an incoming payload before it's merged with the
+  current settings.
 
 ## Service locator
 

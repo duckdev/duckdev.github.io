@@ -6,13 +6,11 @@ title: Redirect Settings
 
 The **Redirects** tab on the Settings page configures the **global fallback
 redirect** — what happens when a 404 fires for a URL that has *no* matching
-custom redirect on the [Redirects page](/404-to-301/redirects).
+custom redirect on the [Redirects page](/404-to-301/redirects/).
 
 Custom redirects always win. These settings only apply when none match.
 
 [[toc]]
-
-[![Redirect Settings](/404-to-301/settings/redirect-settings.png)](/404-to-301/settings/redirect-settings.png)
 
 ## Enable redirect
 
@@ -62,6 +60,14 @@ home URL.
 The value must be an absolute URL including the scheme (`https://…`). It is
 sanitised through `esc_url_raw()` before save.
 
+The destination may point **off-site** — the plugin redirects with
+`wp_redirect()` rather than `wp_safe_redirect()`, so external targets like
+`https://example.com/landing` work as configured. (Destinations are admin-
+controlled, so the host-restriction `wp_safe_redirect()` enforces isn't
+needed; you can re-enable it with the
+[`404_to_301_use_safe_redirect`](/404-to-301/developer-docs#404_to_301_use_safe_redirect)
+filter.)
+
 ### An existing page (`page`)
 
 Redirect to the permalink of a page by ID. The numeric ID is entered in
@@ -84,5 +90,5 @@ temporarily disable the fallback.
 None of these settings affects the Redirects page. A custom redirect
 matching the request URL fires regardless of whether the global fallback
 is on, off, or configured to do nothing. See the
-[Redirects page docs](/404-to-301/redirects) for managing those.
+[Redirects page docs](/404-to-301/redirects/) for managing those.
 :::

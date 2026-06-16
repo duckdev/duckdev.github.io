@@ -10,15 +10,13 @@ decide what gets written from this point forward.
 
 [[toc]]
 
-[![Logs Settings](/404-to-301/settings/logs-settings.png)](/404-to-301/settings/logs-settings.png)
-
 ## Log 404 errors
 
 **Setting key:** `logs_enabled` &middot; **Default:** `On`
 
 The master switch. When off, the Log action becomes a no-op: nothing is
 written, the hit counter doesn't increment, and the
-[Logs page](/404-to-301/logs) stops gaining new rows.
+[Logs page](/404-to-301/logs/) stops gaining new rows.
 
 The Redirect action still runs even with logging off. Disable this when you
 care about redirecting broken URLs but not about archiving the misses.
@@ -66,4 +64,5 @@ don't care which is hit most often.
 The core plugin records logs but doesn't delete them automatically. For
 that, install the free **Logs Cleaner** add-on (advertised at the bottom
 of this tab when not active): it adds size-based, age-based and scheduled
-pruning so the log table stays small on its own.
+pruning so the log table stays small on its own. See the
+[Logs Cleaner add-on docs](/404-to-301/addons/logs-cleaner).

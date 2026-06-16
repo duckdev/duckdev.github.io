@@ -32,25 +32,32 @@ ordered chain of three actions on the `template_redirect` hook:
 2. **Email** — checks the per-URL hit count against the configured threshold
    and sends a notification if it has been reached.
 3. **Redirect** — looks up a custom redirect for the URL, falls back to the
-   global redirect if one is configured, then calls
-   `wp_safe_redirect()` and exits.
+   global redirect if one is configured, then calls `wp_redirect()` and
+   exits.
 
 The order matters: Log runs first so every 404 is captured even when the
 Redirect step would `exit` the request a few microseconds later.
 
+Custom (per-URL) redirects also fire for URLs that *aren't* 404s — if you
+deliberately redirect a page that still exists, the rule is honoured. Only
+logging and the global fallback are reserved for genuine 404s.
+
 ## What's next
 
 - [General settings](/404-to-301/general-settings) — site-wide behaviour
-  (URL guessing, slug monitoring, IP masking, admin 404 tracking, excluded
-  paths).
+  (URL guessing, slug monitoring, IP masking, admin 404 tracking).
 - [Redirect settings](/404-to-301/redirect-settings) — the global
   fallback destination and HTTP status.
 - [Log settings](/404-to-301/log-settings) — what gets recorded and what
   gets skipped.
 - [Notification settings](/404-to-301/notification-settings) — when and where
   to email.
-- [Redirects page](/404-to-301/redirects) — managing per-URL redirects.
-- [Logs page](/404-to-301/logs) — reviewing recorded 404 hits.
+- [Tools](/404-to-301/tools-settings) — exclude paths and
+  settings import / export.
+- [Redirects](/404-to-301/redirects/) — managing per-URL redirects.
+- [Logs](/404-to-301/logs/) — reviewing recorded 404 hits.
+- [Add-ons](/404-to-301/addons/) — first-party extensions (Logs Cleaner,
+  Logs Exporter, Redirects Importer, Email Reports, Telegram Alerts).
 - [WP-CLI](/404-to-301/wp-cli) — every CLI command, flag for flag.
 - [Developer docs](/404-to-301/developer-docs) — every filter and action the
   plugin exposes.

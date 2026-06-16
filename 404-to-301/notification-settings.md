@@ -10,8 +10,6 @@ default so a fresh install never surprises an admin's inbox.
 
 [[toc]]
 
-[![Notification Settings](/404-to-301/settings/notification-settings.png)](/404-to-301/settings/notification-settings.png)
-
 ## Notify by email on 404 errors
 
 **Setting key:** `email_enabled` &middot; **Default:** `Off`
@@ -23,19 +21,23 @@ shown but visually marked as ignored.
 When on, every 404 that reaches the Email action is evaluated against the
 threshold and sent if it qualifies.
 
-## Recipient email
+## Recipient emails
 
 **Setting key:** `email_recipient` &middot; **Default:** the site's
-`admin_email` option.
+`admin_email` option (as a single-entry list).
 
-The address that receives the notification. Single address only — for
-multiple recipients, use a mailing-list address (e.g. `team@example.com`)
-or hook into the [`404_to_301_email_payload`](/404-to-301/developer-docs#404_to_301_email_payload)
-filter to rewrite the `to` field.
+A list of addresses that receive the notification. The field uses a
+chip-style input: type or paste an email, then press Enter, comma or
+Tab to commit it. Invalid entries are rejected at save time, so a typo
+won't break notifications for the addresses that did validate.
 
-Sanitised through `sanitize_email()` before save. An invalid address is
-cleared rather than partially saved, so a blank recipient field always
-means "nobody configured."
+Pasting a comma- or newline-separated string also works — each address
+becomes its own chip.
+
+Stored as `string[]`. Clearing the field entirely silences notifications
+without flipping the master toggle — there is no implicit fallback to
+`admin_email` at send time, only at first-install when the defaults are
+seeded.
 
 ## Hits threshold
 
@@ -58,3 +60,19 @@ Once a URL crosses the threshold and an email is sent, the email action
 remembers that and doesn't re-send for the same URL. Otherwise a URL set
 to threshold `1` on a popular broken link would mean an email per visit.
 :::
+
+## Add-ons on this tab
+
+The built-in email above is a single immediate alert. Two add-ons extend
+this tab with their own boxes for richer notifications — they run on their
+own switches and are **not** governed by the master toggle above:
+
+- **[Telegram Alerts](/404-to-301/addons/telegram-alerts)** — real-time
+  Telegram messages for 404s and redirects, delivered in the background.
+- **[Email Reports](/404-to-301/addons/email-reports)** — scheduled daily,
+  weekly, or monthly email digests of your 404 activity, with an optional
+  CSV attachment.
+
+When either add-on is active it adds its configuration box directly below
+the built-in email settings. See the [Add-ons](/404-to-301/addons/) section
+for the full list.
