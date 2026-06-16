@@ -148,3 +148,57 @@ A fresh install has no legacy `wp_404_to_301` table to read from.
 `migrate run` detects that and exits with `Phase 1 complete — 0 custom
 redirects migrated.` rather than erroring.
 :::
+
+## doctor
+
+Run a health check across the plugin's cron schedule, settings, and
+database. Prints grouped results and exits non-zero on any **FAIL**, so
+it slots into deployment scripts and CI tripwires.
+
+```sh
+wp 404-to-301 doctor [--format=<report|table|csv|json|yaml>]
+```
+
+### Sample output
+
+```text
+Cron
+  [PASS] Hook 404_to_301_run_migration_chunk next runs 2026-06-05 14:20:00 (in 5 minutes).
+
+Settings
+  [FAIL] Invalid email recipient(s): not-an-email.
+  [PASS] Default redirect URL parses cleanly (https://example.com/sitemap).
+
+Database
+  [PASS] Table wp_404_to_301_logs exists.
+  [PASS] Table wp_404_to_301_redirects exists.
+  [WARN] 12 log row(s) reference a redirect that no longer exists.
+  [PASS] Redirect source hashes are unique.
+
+Summary: 5 pass, 1 warn, 1 fail.
+```
+
+### What it checks
+
+- **Cron** — every scheduled event whose hook starts with `404_to_301_`,
+  with the next-run timestamp. Other prefixes can be added via the
+  `404_to_301_doctor_cron_prefixes` filter so addon-owned events show
+  up too.
+- **Settings** — when notifications are enabled: recipient list is
+  non-empty and every entry passes `is_email()`. When the default
+  redirect is enabled: the destination URL parses (link mode) or the
+  destination page exists and is published (page mode).
+- **Database** — both plugin tables exist; no log rows reference a
+  deleted redirect; no duplicate `source_hash` values on the redirects
+  table.
+
+### Exit codes
+
+`0` on a clean bill of health (including WARN), `1` if any check
+reports FAIL. WARN is a heads-up, not a failure — the count surfaces in
+the summary line but doesn't trip the exit code.
+
+### Extending it
+
+Addons can register their own group via the `404_to_301_doctor_checks`
+filter — see the [developer docs](/404-to-301/developer-docs#404_to_301_doctor_checks).
