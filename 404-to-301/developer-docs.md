@@ -105,6 +105,46 @@ add_action( '404_to_301_pre_redirect', function ( $url, $status, $request ) {
 }, 10, 3 );
 ```
 
+### `404_to_301_pre_terminal_status`
+
+The audit-trail twin of `404_to_301_pre_redirect` for the **terminal
+status** dispositions (`410 Gone` / `451 Unavailable For Legal Reasons`).
+Fires immediately before the status header is sent and the request is
+terminated.
+
+```php
+add_action( '404_to_301_pre_terminal_status', function ( $status, $request ) {
+    // $status — 410 or 451
+    error_log( "Terminal $status for {$request->url()}" );
+}, 10, 2 );
+```
+
+### `404_to_301_pre_serve_404` / `404_to_301_serve_404`
+
+Fire when the global 404 fallback is configured to **serve a response in
+place** rather than redirect (any target mode that isn't `link`, `page`,
+or `none` — see the `404_to_301_redirect_targets` filter).
+Unlike the redirect and terminal paths, these do **not** `exit` —
+control returns to WordPress so normal template loading proceeds.
+
+`404_to_301_pre_serve_404` is the audit twin (log/notify); a handler
+hooks `404_to_301_serve_404` to actually render the response. A handler
+should swap `template_include` to load its content and re-assert
+`status_header( 404 )` — rendering a published page would otherwise reset
+the status to `200`. When nothing handles the action the request falls
+through to the theme's own 404 template, so the disposition degrades
+safely if the handler add-on is deactivated.
+
+```php
+// Render a chosen page's content while keeping the 404 status.
+add_action( '404_to_301_serve_404', function ( $request, $type ) {
+    add_filter( 'template_include', function () {
+        status_header( 404 );
+        return locate_template( 'my-404.php' );
+    } );
+}, 10, 2 );
+```
+
 ### `404_to_301_post_log_insert`
 
 Fires after a 404 row has been written. The new row ID is passed first.
@@ -267,6 +307,29 @@ add_filter( '404_to_301_capability', function () {
 } );
 ```
 
+### `404_to_301_has_access` / `404_to_301_rest_has_access`
+
+The access decision itself, after the capability check has run. Use these
+when access depends on more than a capability — a per-user flag, IP
+allow-list, or business-hours gate. `404_to_301_has_access` guards the
+admin UI; `404_to_301_rest_has_access` guards every REST endpoint and
+additionally receives the `WP_REST_Request`.
+
+```php
+// Admin UI: also require the user to be on the editorial team.
+add_filter( '404_to_301_has_access', function ( $allowed ) {
+    return $allowed && current_user_can( 'edit_others_posts' );
+} );
+
+// REST: allow read-only collection requests for any logged-in user.
+add_filter( '404_to_301_rest_has_access', function ( $allowed, $request ) {
+    if ( 'GET' === $request->get_method() && is_user_logged_in() ) {
+        return true;
+    }
+    return $allowed;
+}, 10, 2 );
+```
+
 ### `404_to_301_doctor_checks`
 
 Filter the grouped check list that `wp 404-to-301 doctor` renders. The
@@ -312,6 +375,31 @@ add_filter( '404_to_301_redirect_target', function ( $payload, $request ) {
 ```
 
 `$payload` is `[ 'url' => string, 'status' => int ]`.
+
+::: tip Singular vs. plural
+`404_to_301_redirect_target` (singular) overrides the **resolved target
+of one request**. `404_to_301_redirect_targets` (plural, below) registers
+the **catalogue of global-fallback target modes** offered in settings.
+:::
+
+### `404_to_301_redirect_targets`
+
+Register the catalogue of global 404-fallback **target modes** shown in
+the settings UI. The defaults are `link` (a custom URL), `page` (an
+existing page), and `none` (no redirect). Any additional mode you
+register is treated as a "serve in place" disposition — when it's the
+active fallback, the plugin fires the `404_to_301_serve_404` action
+instead of redirecting, so an add-on can render its own 404 content while
+keeping the 404 status.
+
+```php
+add_filter( '404_to_301_redirect_targets', function ( $targets ) {
+    $targets['page_404'] = __( 'A custom 404 page', 'my-addon' );
+    return $targets;
+} );
+```
+
+`$targets` is a `stored value => translated label` map.
 
 ### `404_to_301_redirect_statuses`
 
