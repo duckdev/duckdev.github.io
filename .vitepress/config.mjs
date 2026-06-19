@@ -105,6 +105,7 @@ export default defineConfig({
 					},
 					{ text: 'WP-CLI', link: '/404-to-301/wp-cli' },
 					{ text: 'Developer Docs', link: '/404-to-301/developer-docs' },
+					{ text: 'Changelog', link: '/404-to-301/changelog' },
 				]
 			},
 			{
