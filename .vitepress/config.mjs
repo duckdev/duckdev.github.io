@@ -55,6 +55,7 @@ export default defineConfig({
 					{
 						text: 'Addons',
 						base: '/loggedin/addons',
+						collapsed: true,
 						items: [
 							{ text: 'Realtime Logout', link: '/realtime-logout' },
 							{ text: 'Limit Per User', link: '/limit-per-user' },
@@ -69,6 +70,7 @@ export default defineConfig({
 					{ text: 'Getting Started', link: '/404-to-301/getting-started' },
 					{
 						text: 'Settings',
+						collapsed: true,
 						items: [
 							{ text: 'General', link: '/404-to-301/general-settings' },
 							{ text: 'Redirects', link: '/404-to-301/redirect-settings' },
@@ -79,6 +81,7 @@ export default defineConfig({
 					},
 					{
 						text: 'Redirects',
+						collapsed: true,
 						items: [
 							{ text: 'Overview', link: '/404-to-301/redirects/' },
 							{ text: 'Match Modes & Query Handling', link: '/404-to-301/redirects/matching' },
@@ -86,6 +89,7 @@ export default defineConfig({
 					},
 					{
 						text: 'Logs',
+						collapsed: true,
 						items: [
 							{ text: 'Overview', link: '/404-to-301/logs/' },
 							{ text: 'Log Actions', link: '/404-to-301/logs/actions' },
@@ -94,6 +98,7 @@ export default defineConfig({
 					{
 						text: 'Add-ons',
 						base: '/404-to-301/addons',
+						collapsed: true,
 						items: [
 							{ text: 'Overview', link: '/' },
 							{ text: 'Logs Cleaner', link: '/logs-cleaner' },
