@@ -55,9 +55,9 @@ Runs the cleanup automatically on a WP-Cron schedule.
 
 **Setting key:** `logs_cleaner_keep_redirects`
 
-When on, log rows that have been promoted to a custom redirect (status
-**Custom redirect**) are kept even if they'd otherwise be pruned — they're
-the record of which broken URLs you've already fixed.
+When on, log rows that have a linked custom redirect (any row with a
+non-null `redirect_id`) are kept even if they'd otherwise be pruned —
+they're the record of which broken URLs you've already fixed.
 
 ## How it runs
 

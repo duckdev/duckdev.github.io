@@ -8,6 +8,19 @@ Full release history for **404 to 301**. The plugin's bundled
 `readme.txt` keeps only the latest couple of releases; the complete
 history lives here.
 
+## 4.0.1
+
+* New: Summary card strip above the Logs and Redirects tables for an at-a-glance overview (total / open / ignored / fixed / has custom redirect; total / active / inactive / total hits).
+* New: **Purge all logs** action in Settings → Tools → Danger Zone with a confirmation modal. Custom redirects are not touched.
+* New: Custom redirect modal on the Logs page now also lets you edit an already-linked redirect — no need to bounce to the Redirects page.
+* New: One-time 4.0.0 → 4.0.1 data migration converts legacy `Custom redirect` log rows to the new status model (active link → Fixed, inactive or missing link → Open).
+* Improve: Redesigned log **View details** modal with a cleaner table layout and the 404 path shown prominently.
+* Improve: Log status is decoupled from custom redirect linkage. The redirect link is now shown as a small badge next to the status icon, so the workflow status (Open / Ignored / Fixed) stays meaningful.
+* Improve: Linking a custom redirect now sets the log to **Fixed** only when the redirect is active. Toggling a redirect's active state syncs every linked log automatically.
+* Improve: Deleting a custom redirect now unlinks any logs that referenced it (the rows reopen so the broken URL surfaces again).
+* Improve: When editing a redirect that is linked to a 404 log, the **Source URL** field is locked to keep the link intact. A small info notice explains why.
+* Fix: Stale per-row cache on log rows after bulk status syncs.
+
 ## 4.0.0
 
 * New: Custom redirect manager with exact, prefix and regex matching and per-redirect redirect type.

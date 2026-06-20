@@ -21,6 +21,13 @@ retire. Only logging and the global fallback are reserved for genuine 404s.
 
 [[toc]]
 
+## Summary cards
+
+A strip of cards above the table shows the aggregate state at a glance:
+**Total**, **Active**, **Inactive**, and **Total hits** (the sum of the
+`Hits` column across every row). They refresh whenever you create, edit
+or delete a redirect.
+
 ## The list view
 
 Each row in the table shows:
@@ -95,8 +102,19 @@ use this to take a redirect out of rotation without deleting it.
 ## Editing and deleting
 
 Click the row's overflow menu (the three dots) to edit, disable, or delete
-it. Deleting is permanent — the row is removed from the database, but the
-matching log rows (if any) are left in place.
+it.
+
+When you edit a redirect that is **linked to a 404 log**, the **Source
+URL** field is locked — changing it would break the link between the
+redirect and the log. A small info notice under the field explains why.
+Every other field stays editable. If you really need to change the
+source, unlink the log first (delete the log, or delete the redirect and
+recreate it).
+
+Deleting is permanent — the row is removed from the database, and any
+log rows that referenced it are **automatically unlinked**: their
+`redirect_id` is cleared and the workflow status is reset to **Open** so
+the broken URL surfaces again for review.
 
 ## Audit trail
 
@@ -110,9 +128,19 @@ a dash.
 ## Promoting a log entry to a redirect
 
 The fastest way to fix a known broken URL is to redirect it directly from
-the Logs page. Open the log row and choose **Add a custom redirect** — the
-source URL is pre-filled and you only need to enter the destination. See
-the [Logs actions](/404-to-301/logs/actions) for the full action list.
+the Logs page. Open the log row's menu and choose **Custom redirect** —
+the source URL is pre-filled (and locked) and you only need to enter the
+destination. If the log already has a linked redirect, the same action
+opens it in edit mode instead. See the
+[Logs actions](/404-to-301/logs/actions) for the full action list.
+
+::: info Linking and the workflow status
+When you save the redirect, the linked log's status is set to **Fixed**
+only if the redirect is **Active**. If the redirect is **Inactive** at
+save time, or if you later toggle it off, the linked log(s) flip back to
+**Open** automatically so the broken URL resurfaces. Re-activating syncs
+them back to Fixed.
+:::
 
 ## Bulk actions
 

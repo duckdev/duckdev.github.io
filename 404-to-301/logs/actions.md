@@ -16,11 +16,17 @@ For the list view, columns, statuses and filtering, see
 
 Each row's overflow menu offers:
 
-- **View** — opens a side panel with the full request context (all headers,
-  the resolved IP, the User-Agent, the hit timeline).
-- **Add a custom redirect** — pre-fills the source URL in the redirect
-  editor so you only need to enter the destination. Saves a click compared
-  to opening the [Redirects page](/404-to-301/redirects/) manually.
+- **View details** — opens a modal with the full request context grouped
+  into Request, Visit info and Settings sections, with the 404 path shown
+  prominently above them.
+- **Custom redirect** — opens the redirect editor pre-filled with the
+  log's URL as the source.
+    - If the log has **no** linked redirect, you create a new one and it
+      gets linked to the log automatically.
+    - If the log **already** has a linked redirect, the editor loads that
+      redirect for editing in place.
+    - The **Source URL** is locked to the log's 404 path in both cases —
+      changing it would break the link.
 - **Mark as fixed** — set the row's status to `Fixed`.
 - **Mark as ignored** — set the row's status to `Ignored`.
 - **Reopen** — flip a `Fixed` / `Ignored` row back to `Open`.
