@@ -8,6 +8,13 @@ Full release history for **404 to 301**. The plugin's bundled
 `readme.txt` keeps only the latest couple of releases; the complete
 history lives here.
 
+## 4.0.2
+
+* Improve: Add-ons catalogue now pulls each free add-on's icon and banner from the WordPress.org asset CDN and links to its WordPress.org plugin page.
+* Improve: Clearer Redirects Importer description in the add-ons catalogue.
+* Fix: Migration banner no longer shows on fresh installs running on SQLite (such as WordPress Playground), where legacy-table detection returned a false positive.
+* Fix: Restored the spacing below the migration banner so it no longer touches the logs summary cards.
+
 ## 4.0.1
 
 * New: Summary card strip above the Logs and Redirects tables for an at-a-glance overview (total / open / ignored / fixed / has custom redirect; total / active / inactive / total hits).
