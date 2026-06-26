@@ -1,15 +1,15 @@
 ---
-title: LoggedIn
-description: LoggedIn — WordPress plugin documentation.
+title: Loggedin
+description: Loggedin — WordPress plugin documentation.
 head:
   - - meta
     - http-equiv: refresh
-      content: 0; url=/loggedin/general-settings
+      content: 0; url=/loggedin/getting-started
   - - link
     - rel: canonical
-      href: https://docs.duckdev.com/loggedin/general-settings
+      href: https://docs.duckdev.com/loggedin/getting-started
 ---
 
-# LoggedIn
+# Loggedin
 
-Redirecting to [General Settings](/loggedin/general-settings)…
+Redirecting to [Getting Started](/loggedin/getting-started)…

@@ -1,46 +1,111 @@
 ---
-outline: deep
+title: Limit Per Role
 ---
 
-# Configuring Limit Per Role
+# Limit Per Role
 
-The **Limit Per Role** add-on lets you define a maximum number of concurrent sessions for each WordPress user role. Instead of applying a single global limit to every user on your site, you can tailor the limit to each role — giving administrators more sessions while keeping stricter limits for subscribers, for example.
+The **Limit Per Role** add-on lets you set a concurrent-session cap per
+WordPress user role. Instead of applying one global number to every user
+on the site, you can give administrators more headroom while keeping
+subscribers and customers on a tighter cap — or vice versa.
 
-Unlike the [Limit Per User](./limit-per-user) add-on, this add-on is configured directly from the main Loggedin settings page rather than individual user profiles.
+The add-on adds its own panel to the parent plugin's settings screen.
+Open **Users → Loggedin → Settings** — the **Limit Per Role** panel sits
+between the General Settings and the Force Logout panels.
 
-[![Limit Per Role Settings](/loggedin/limit-per-role/settings.png)](/limit-per-role/settings.png)
+[[toc]]
 
-## Roles to Limit
+## How it works
 
-This is a set of checkboxes listing every registered WordPress role on your site. Only roles you check here will have a custom concurrent session limit applied. Roles you leave unchecked continue to use the global concurrent session limit configured in the main Loggedin settings.
+A short notice at the top of the panel surfaces the two rules to keep in
+mind:
 
-Checking a role reveals a number input field directly below where you can enter the limit for that role.
+> Roles without a custom limit use the global setting above. If a user
+> has multiple roles with custom limits, the highest one applies.
 
-## Role Limit Fields
+Below the notice is the role list itself — each registered WordPress role
+on your site (built-in or custom) gets one row with two controls.
 
-Once a role is selected, a dedicated input field appears for it. Enter the maximum number of concurrent sessions you want to allow for users belonging to that role.
+## Enable checkbox
 
-- **Minimum value:** `1` — setting a limit below 1 is treated as no limit.
-- **Empty or 0:** The role falls back to the global limit, same as if it were unchecked.
+**Input:** Checkbox per role
 
-Each role gets its own independent field, so you can mix and match limits freely across roles.
+Toggles whether a role has a custom limit at all.
 
-## How It Works
+- **Unchecked** — no override; users with this role use the global limit.
+- **Checked** — the number input becomes editable and the role uses the
+  custom limit.
 
-### Priority over the global limit
+## Limit input
 
-When a user logs in, Loggedin checks whether any of their assigned roles have a custom limit configured here. If a matching role limit is found, it overrides the global concurrent session limit for that user.
+**Setting key:** `loggedin_limit_per_role_limits[<role_slug>]` &middot;
+**Default:** *unset (use the global limit)*
 
-### Multiple roles
+A number input visible (or active) once the role's checkbox is enabled.
+Minimum is `1`; non-positive values are stripped at save.
 
-WordPress users can have more than one role at a time. If a user holds multiple roles and more than one of those roles has a configured limit, the **highest limit wins**. This means multi-role users always get the most permissive cap among their roles, rather than the most restrictive one.
+Roles you've unchecked are removed from the stored map entirely — they
+don't persist as `0`. The full option (`loggedin_limit_per_role_limits`)
+is stored as a `{ role_slug: int }` map.
 
-For example, if a user has both the **Editor** role (limit: 2) and the **Shop Manager** role (limit: 5), that user will be allowed up to **5** concurrent sessions.
+## Multi-role users — "highest wins"
 
-### Fallback to global limit
+WordPress users can have more than one role at a time. When a multi-role
+user logs in, this add-on collects every configured limit that applies to
+any of their roles and takes the **highest** number as their cap.
 
-If none of a user's roles have a configured limit, the global concurrent session limit from the main Loggedin settings applies as usual.
+| Roles held by user | Configured limits | Effective cap |
+| --- | --- | --- |
+| Subscriber | 2 | 2 |
+| Editor + Shop Manager | 3, 5 | **5** (highest) |
+| Editor only | 3 | 3 |
+| Author (no custom limit configured) | — | Global limit |
 
-::: info Priority order
-The **Limit Per User** add-on, if also active, takes priority over role-based limits. A per-user limit set on an individual's profile will always override both the role limit and the global limit.
-:::
+The rule is intentionally permissive rather than restrictive: a user with
+a more "open" role attached to their account isn't surprised by a tighter
+cap inherited from a sibling role.
+
+## How the cap is enforced
+
+The add-on hooks the parent plugin's
+[`loggedin_reached_limit`](/loggedin/developer-docs#loggedin_reached_limit)
+filter at priority `10`. It overrides the global verdict whenever the user
+holds at least one role with a configured limit.
+
+The selected [Login Logic](/loggedin/general-settings#login-logic) still
+applies — only the numeric cap changes.
+
+## Priority over other add-ons
+
+If you run both this add-on and **Limit Per User**, per-user overrides
+win:
+
+| Source | Priority on `loggedin_reached_limit` |
+| --- | --- |
+| Limit Per Role | `10` |
+| Limit Per User | `11` |
+
+Per-user > per-role > global. The per-user filter runs later and can
+override whatever this add-on decided.
+
+## Saving
+
+Edits don't persist until you click **Save Changes** at the bottom of the
+Settings tab. The Save button flushes every pending edit on the page —
+both this panel and the General Settings — in a single REST round-trip.
+
+## Behaviour with custom roles
+
+The role list is built from `wp_roles()->get_names()`, so any role
+registered by another plugin or by your theme appears automatically. If
+you delete a custom role after configuring a limit for it, the next save
+drops the orphaned entry from the stored map (the sanitiser skips role
+slugs that aren't currently registered).
+
+## Related
+
+- [General Settings](/loggedin/general-settings) — global fallback limit.
+- [Limit Per User](/loggedin/addons/limit-per-user) — per-user override
+  (wins over this add-on).
+- [`loggedin_reached_limit`](/loggedin/developer-docs#loggedin_reached_limit)
+  — the underlying filter.

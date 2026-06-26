@@ -47,21 +47,22 @@ export default defineConfig({
 			{
 				text: 'Loggedin',
 				items: [
+					{ text: 'Getting Started', link: '/loggedin/getting-started' },
 					{ text: 'General Settings', link: '/loggedin/general-settings' },
 					{ text: 'Manage Sessions', link: '/loggedin/manage-sessions' },
-					{ text: 'Installing an Add-on', link: '/loggedin/installing-add-on' },
-					{ text: 'Managing Licenses', link: '/loggedin/managing-licenses' },
-					{ text: 'Developer Docs', link: '/loggedin/developer-docs' },
 					{
-						text: 'Addons',
+						text: 'Add-ons',
 						base: '/loggedin/addons',
 						collapsed: true,
 						items: [
-							{ text: 'Realtime Logout', link: '/realtime-logout' },
+							{ text: 'Overview', link: '/' },
+							{ text: 'Real-time Logout', link: '/realtime-logout' },
 							{ text: 'Limit Per User', link: '/limit-per-user' },
 							{ text: 'Limit Per Role', link: '/limit-per-role' },
 						]
-					}
+					},
+					{ text: 'Developer Docs', link: '/loggedin/developer-docs' },
+					{ text: 'Changelog', link: '/loggedin/changelog' },
 				]
 			},
 			{

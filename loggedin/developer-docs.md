@@ -4,215 +4,723 @@ title: Developer Docs
 
 # Developer Docs
 
-Loggedin offers a robust system of hooks, which allow you to extend the plugin's functionality without modifying its core files. This ensures your custom code remains intact even after a plugin update. There are two primary types of hooks: Actions and Filters.
+Loggedin ships with a stable extension surface so you can customise
+behaviour without touching plugin files. Everything documented on this
+page is part of the public API and will keep working across minor
+releases — PHP actions and filters, the React `loggedin.settings.panels`
+slot, the `/loggedin/v1` REST endpoints, and the option schema.
 
-To use either type of hook, you must first create a callback function. This is a custom function that contains the code you want to execute. You then register this callback with a specific Loggedin hook, telling the plugin exactly when and where to run your code.
+All PHP examples can be dropped into your theme's `functions.php` or a
+small companion plugin.
+
+[[toc]]
+
+## Architecture overview
+
+```
+DuckDev\Loggedin\
+├── Plugin                       Constants (version, slug, option key, REST namespace)
+├── Core                         Boot orchestrator — wires every module and fires loggedin_init
+├── Setup\{Settings, Upgrader}   Options store + version bump handler
+├── Front\Session_Guard          Hooks the WordPress auth pipeline; enforces the cap
+├── Admin\{Admin, Assets}        Menu + page + React bundle enqueue (admin only)
+├── Addons\{Addons, Catalog}     Freemius wiring + shaped catalogue for the React UI
+├── Api\{Endpoint, Settings,
+│         Sessions, Addons}      REST controllers under /loggedin/v1
+├── Contracts\Singleton          Shared trait used by every module
+└── Utils\…                      Shared helpers
+```
+
+The recommended way to extend the plugin is:
+
+1. Hook into [`loggedin_init`](#loggedin_init) so your code runs only after
+   every subsystem is up.
+2. Use the documented filters and actions for everything you can — they
+   are guaranteed stable.
+3. For UI extensions, contribute a React `PanelBody` via the
+   [`loggedin.settings.panels`](#loggedin-settings-panels) JS filter and
+   read/write your own `show_in_rest` site option through `useEntityProp`.
+
+## Plugin constants
+
+Useful when writing extensions or talking to the plugin from a sibling
+add-on. All live on `DuckDev\Loggedin\Plugin`:
+
+| Constant | Value | Purpose |
+| --- | --- | --- |
+| `VERSION` | `2.0.4` | Current plugin version. |
+| `SLUG` | `loggedin` | Plugin slug; matches the Freemius and i18n slugs. |
+| `TEXT_DOMAIN` | `loggedin` | Translation text domain. |
+| `OPTION_KEY` | `loggedin_settings` | WP option name where every plugin setting is stored. |
+| `REST_NAMESPACE` | `loggedin/v1` | Namespace for every REST route the plugin registers. |
+| `FREEMIUS_ID` | `19328` | The parent plugin's Freemius id. |
+
+## Settings storage
+
+Loggedin stores its settings in a single WP option: **`loggedin_settings`**.
+The shape is:
+
+```php
+array(
+    'maximum' => 1,        // int, ≥1. Concurrent-session cap.
+    'logic'   => 'allow',  // enum: 'allow' | 'logout_oldest' | 'block'.
+)
+```
+
+The option is registered with `show_in_rest`, so:
+
+- The React Settings tab reads/writes through `/wp/v2/settings` via
+  `useEntityProp( 'root', 'site', 'loggedin_settings' )`.
+- The plugin's own [`GET / POST /loggedin/v1/settings`](#settings-endpoints)
+  endpoints exist for CLI / cURL recipes.
+
+The REST schema uses `additionalProperties: false` — **unknown keys are
+dropped at the REST boundary**. If you want to extend the option with new
+keys, register your own `show_in_rest` site option (the pattern every
+official add-on uses) — don't try to write directly to
+`loggedin_settings`; your keys will survive in storage but the sanitiser
+will drop them on the next save through the UI.
+
+::: info Logic mode internals
+- `allow` is the value the radio labels as **Logout All**.
+- `logout_oldest` is **Logout Oldest**.
+- `block` is **Block New**.
+
+These names are stored exactly as shown; rename them carefully — existing
+installs depend on the value, not the label.
+:::
 
 ## Actions
 
-Actions are a type of hook that allows you to execute a custom function at a specific, predefined point in the Loggedin plugin's execution. They are ideal for adding, updating, or performing a task without altering the data that's being processed.
+### `loggedin_init`
 
-### 1. `loggedin_settings_bottom`
-
-This action hook allows you to add custom content to the very bottom of the Loggedin plugin's settings page. It is particularly useful for adding new, custom settings fields to the user interface.
-
-Use this hook to extend the Loggedin settings page with your own UI elements. If you register your custom settings fields within the `loggedin` settings group, the plugin will automatically handle the process of saving and updating these settings in the database, simplifying your development process.
-
-#### Example Usage
-
-To use this hook, you would add a line of code to your theme's functions.php file or a custom plugin. The following example demonstrates how to register a callback function to add a settings page.
+Fires once every plugin module has been wired up.
 
 ```php
-add_action( 'loggedin_settings_bottom', 'my_custom_settings_function' );
-
-function my_custom_settings_function() {
-    // You can add your HTML for custom settings here.
-    echo '<h3>Custom Settings Section</h3>';
-    echo '<p>This is a new section added via the loggedin_settings_bottom action hook.</p>';
-}
+do_action( 'loggedin_init', \DuckDev\Loggedin\Core $core );
 ```
+
+| Parameter | Type | Description |
+| --- | --- | --- |
+| `$core` | `Core` | The shared `Core` instance, for context. |
+
+This is the canonical place for an add-on plugin to boot itself — the
+Settings store and the REST namespace are guaranteed to be ready by the
+time this fires.
+
+```php
+add_action(
+    'loggedin_init',
+    array( \DuckDev\Loggedin\RealtimeLogout\Plugin::class, 'boot' )
+);
+```
+
+### `loggedin_login_blocked`
+
+Fires when a login is rejected because the user has reached the limit in
+**Block New** mode.
+
+```php
+do_action( 'loggedin_login_blocked', int $user_id );
+```
+
+| Parameter | Type | Description |
+| --- | --- | --- |
+| `$user_id` | int | User id whose login was blocked. |
+
+Use it to add audit logging, send a notification, or trigger anti-abuse
+heuristics. The login has already been rejected by the time this fires —
+you can't override the decision from here (use
+[`loggedin_reached_limit`](#loggedin_reached_limit) or
+[`loggedin_bypass`](#loggedin_bypass) for that).
+
+```php
+add_action( 'loggedin_login_blocked', function ( $user_id ) {
+    error_log( sprintf( 'Loggedin: blocked login for user #%d', $user_id ) );
+} );
+```
+
+### `loggedin_destroy_all_sessions`
+
+Fires every time the plugin destroys all of a user's sessions. Two paths
+trigger it:
+
+1. The **Logout All** (`allow`) login logic, when a new login displaces
+   every existing session.
+2. The admin-facing **Force Logout** panel under
+   [Manage Sessions](/loggedin/manage-sessions).
+
+```php
+do_action( 'loggedin_destroy_all_sessions', int $user_id );
+```
+
+| Parameter | Type | Description |
+| --- | --- | --- |
+| `$user_id` | int | User whose sessions were cleared. |
+
+```php
+add_action( 'loggedin_destroy_all_sessions', function ( $user_id ) {
+    // Bust your app's per-user cache, fire a webhook, etc.
+} );
+```
+
+### `loggedin_destroy_oldest_session`
+
+Fires when the **Logout Oldest** login logic destroys a user's single
+oldest active session to make room for a new one.
+
+```php
+do_action( 'loggedin_destroy_oldest_session', int $user_id );
+```
+
+| Parameter | Type | Description |
+| --- | --- | --- |
+| `$user_id` | int | User whose oldest session was cleared. |
+
+Note: this fires **only** in `logout_oldest` mode. In `allow` (Logout
+All) mode you get [`loggedin_destroy_all_sessions`](#loggedin_destroy_all_sessions)
+instead.
 
 ## Filters
 
-Filters allow you to modify data that is being processed by the plugin. A callback function for a filter will receive a variable, modify it, and then return the modified variable.
+### `loggedin_settings_defaults`
 
-### 1. `loggedin_logics`
-
-This filter gives you the ability to modify the list of available login logics. You can use it to add new custom logics or remove existing ones.
-
-If you add a new logic, you are responsible for implementing the code that handles that logic's functionality.
-
-#### Parameters
-
-* `logics`: An array containing the available login logics. Each key in the array represents a logic's ID, and its value is another array with details like `label` and `desc`.
-
-#### Example Usage
+Filters the default values returned by `Settings::defaults()`. Useful
+when you're registering your own settings keys that should ship a
+sensible default for first-time reads.
 
 ```php
-add_filter( 'loggedin_logics', 'my_custom_login_logic' );
-
-function my_custom_login_logic( $logics ) {
-	$logics['custom_logic'] = array(
-		'label' => 'Custom Logic',
-		'desc'  => 'Custom logic description',
-	);
-	
-	return $logics;
-}
+apply_filters( 'loggedin_settings_defaults', array $defaults );
 ```
 
-### 2. `loggedin_register_addon`
-
-This filter filters the list of registered addons. Addon plugins should use this filter to register with the parent "Loggedin" plugin.
-
-::: warning Important
-This filter is only intended for official Loggedin addons because it requires the addons to be registered in Freemius under the Loggedin plugin.
-:::
-
-#### Parameters
-
-* `addons`: An array containing the list of addon details. Array item key should the Freemius product ID.
-
-#### Example Usage
+| Parameter | Type | Description |
+| --- | --- | --- |
+| `$defaults` | array | Defaults keyed by setting id. |
 
 ```php
-add_filter( 'loggedin_register_addon', 'my_custom_addon_register' );
+add_filter( 'loggedin_settings_defaults', function ( $defaults ) {
+    $defaults['my_addon_flag'] = true;
+    return $defaults;
+} );
+```
 
-function my_custom_addon_register( $addons ): array {
-    // Here 123 is the product id of the addon.
+::: warning Schema vs defaults
+Adding a key here does **not** make it acceptable to the
+`/wp/v2/settings` endpoint — the REST schema for `loggedin_settings`
+rejects unknown keys. For settings that need a UI, register your own
+site option via `register_setting()` with `show_in_rest` (see
+[Adding a custom Settings panel](#adding-a-custom-settings-panel)) — it's
+what the official add-ons do.
+:::
+
+### `loggedin_logics`
+
+Filters the catalogue of available **Login Logic** modes. Each entry is
+a `{ label, desc }` map keyed by the mode id.
+
+```php
+apply_filters( 'loggedin_logics', array $logics );
+```
+
+| Parameter | Type | Description |
+| --- | --- | --- |
+| `$logics` | array | `[ mode_id => [ 'label' => string, 'desc' => string ] ]` |
+
+```php
+add_filter( 'loggedin_logics', function ( $logics ) {
+    $logics['notify_only'] = array(
+        'label' => __( 'Notify Only', 'my-plugin' ),
+        'desc'  => __( 'Email the user; do not block the login.', 'my-plugin' ),
+    );
+
+    return $logics;
+} );
+```
+
+::: danger Adding a mode is two-step
+The Settings sanitiser hard-codes the list of allowed modes (`allow`,
+`logout_oldest`, `block`). If you only hook `loggedin_logics`, your new
+mode appears in the radio group but gets **silently reverted** to `allow`
+on save. To make it stick you also need to:
+
+1. Hook `pre_update_option_loggedin_settings` (or a wrapper option's
+   `sanitize_callback`) to whitelist your mode before WordPress hands the
+   value to Loggedin's sanitiser, **or**
+2. Translate your mode into one of the built-in modes via your own hook
+   on [`loggedin_reached_limit`](#loggedin_reached_limit) or a custom
+   action handler.
+
+For most extensions the cleaner path is to keep the visible logic on a
+built-in mode and add the extra behaviour as a side effect of
+[`loggedin_destroy_all_sessions`](#loggedin_destroy_all_sessions) or
+[`loggedin_login_blocked`](#loggedin_login_blocked).
+:::
+
+### `loggedin_admin_script_vars`
+
+Filters the JS payload localised as `window.loggedin` on the plugin
+admin page. Use this to ship extra data to a
+[custom Settings panel](#adding-a-custom-settings-panel) so it doesn't
+have to make a REST round-trip just to bootstrap.
+
+```php
+apply_filters( 'loggedin_admin_script_vars', array $vars );
+```
+
+Default keys: `version`, `slug`, `name`, `page`, `restUrl`, `restNonce`,
+`adminUrl`, `logics`.
+
+```php
+add_filter( 'loggedin_admin_script_vars', function ( $vars ) {
+    $vars['my_feature_flag'] = (bool) get_option( 'my_feature_flag' );
+    return $vars;
+} );
+```
+
+In your React panel:
+
+```js
+const flag = window.loggedin?.my_feature_flag ?? false;
+```
+
+### `loggedin_register_addon`
+
+The mechanism every official add-on uses to register itself with the
+parent plugin's Freemius pipeline.
+
+```php
+apply_filters( 'loggedin_register_addon', array $addons );
+```
+
+The array is keyed by **Freemius product id**; each value is the SDK
+config payload:
+
+```php
+add_filter( 'loggedin_register_addon', function ( $addons ) {
     $addons[ 1234 ] = array(
-        'slug'       => 'loggedin-custom-addon',
+        'slug'       => 'my-loggedin-addon',
         'is_premium' => true,
         'main_file'  => __FILE__,
-        'public_key' => 'pk_123456abcdef',
+        'public_key' => 'pk_abcdef1234567890',
     );
 
     return $addons;
-}
+} );
 ```
 
-### 3. `loggedin_admin_page_vars`
-
-This filter modifies or adds new variables to the Loggedin admin template variables. It is used by the loggedin admin page templates. Addon plugins can use this filter to add their custom template variables.
-
-#### Parameters
-
-* `vars`: An array of variables and their values.
-
-#### Sample Usage
-
-```php
-add_filter( 'loggedin_admin_page_vars', 'my_custom_admin_vars' );
-
-function my_custom_admin_vars( $vars ): array {
-    $vars[ 'custom_var' ] = 'Custom var value';
-
-    return $vars;
-}
-```
-
-### 4. loggedin_reached_limit
-
-This filter changes the limit condition. You can use it to check additional conditions before a user hits the limit or to dynamically change a user's limit.
-
-::: tip Note
-This filter will not be used if the user limit check is already bypassed by using the `loggedin_bypass` filter.
+::: warning Official add-ons only
+This filter wires an add-on into the Loggedin Freemius project.
+Self-hosted or third-party plugins should not hook here — they need their
+own Freemius project (or no licensing at all). The filter is documented
+because every official add-on uses it and our own examples reference it.
 :::
 
-#### Parameters
-* `reached`: A boolean. Return `true` or `false` when the limit is reached. 
-* `user_id`: The ID of the user whose limit is being checked.
-* `count`: The current count of the user's active concurrent sessions.
+### `loggedin_addons_catalog`
 
-#### Example Usage
+Filters the decorated addon catalogue right before it's returned by
+[`GET /loggedin/v1/addons`](#get-loggedin-v1-addons). Use this to splice
+in custom rows for a self-hosted / white-label build of the Add-ons tab.
 
 ```php
-add_filter( 'loggedin_reached_limit', 'my_custom_limit_check', 10, 3 );
+apply_filters( 'loggedin_addons_catalog', array $items, array $raw );
+```
 
-function my_custom_limit_check( $reached, $user_id, $count ) {
-    // For user 123, hit the limit only when concurrent logins hit 10.
-    if ( 123 === $user_id ) {
-        return $count > 10;
+| Parameter | Type | Description |
+| --- | --- | --- |
+| `$items` | array | Shaped rows the React UI consumes. |
+| `$raw` | array | Raw catalogue rows from the Freemius SDK. |
+
+Each shaped row carries: `id`, `title`, `icon`, `link`, `description`,
+`homepage`, `is_premium`, `is_active`, `is_license_active`, `license_key`,
+`banner`, `banner_large`.
+
+### `loggedin_reached_limit`
+
+The core override hook for the concurrent-session check. Runs every time
+a user authenticates, after the global verdict has been computed but
+before any sessions are destroyed.
+
+```php
+apply_filters( 'loggedin_reached_limit', bool $reached, int $user_id, int $count );
+```
+
+| Parameter | Type | Description |
+| --- | --- | --- |
+| `$reached` | bool | Whether the upstream check says the limit is reached. |
+| `$user_id` | int | User id being checked. |
+| `$count` | int | Current count of active session tokens. |
+
+```php
+// Allow user 123 up to 10 sessions regardless of the global cap.
+add_filter( 'loggedin_reached_limit', function ( $reached, $user_id, $count ) {
+    if ( 123 === (int) $user_id ) {
+        return $count >= 10;
     }
 
     return $reached;
-}
+}, 10, 3 );
 ```
 
-### 5. loggedin_bypass
+This is the same filter the
+[Limit Per Role](/loggedin/addons/limit-per-role) (priority `10`) and
+[Limit Per User](/loggedin/addons/limit-per-user) (priority `11`) add-ons
+use. If you write your own hook and want to override either, register at
+a higher priority.
 
-This filter can be used to bypass the limit check for certain users.
+::: tip Bypassed users skip this filter
+If [`loggedin_bypass`](#loggedin_bypass) returns true for the user, the
+limit check short-circuits and `loggedin_reached_limit` is never reached.
+:::
 
-#### Parameters
+### `loggedin_bypass`
 
-* `bypass`: Return true to bypass the limit check.
-* `user_id`: The ID of the current user.
-
-#### Sample Usage
-
-To bypass specific user IDs, use the following code:
+Filter to exempt a user from the concurrent-session check entirely.
+Returning `true` means the limit doesn't apply, regardless of the
+configured logic mode or per-role / per-user override.
 
 ```php
-add_filter( 'loggedin_bypass', 'my_custom_bypass_users', 10, 2 );
-
-function my_custom_bypass_users( $bypass, $user_id ) {
-    // Add the user IDs you want to bypass to this array.
-    $allowed_users = array( 1, 2, 3, 4, 5 );
-    
-    return in_array( $user_id, $allowed_users );
-}
+apply_filters( 'loggedin_bypass', bool $bypass, int $user_id );
 ```
 
-To bypass specific user roles, use this code:
-
 ```php
-add_filter( 'loggedin_bypass', 'loggedin_bypass_roles', 10, 2 );
-
-function loggedin_bypass_roles( $prevent, $user_id ) {
-    // Add the roles you want to bypass to this array.
-    $allowed_roles = array( 'administrator', 'editor' );
+// Allow administrators unlimited sessions.
+add_filter( 'loggedin_bypass', function ( $bypass, $user_id ) {
     $user = get_user_by( 'id', $user_id );
-    $roles = ! empty( $user->roles ) ? $user->roles : array();
-    
-    return ! empty( array_intersect( $roles, $allowed_roles ) );
-}
+    return $user && in_array( 'administrator', (array) $user->roles, true );
+}, 10, 2 );
 ```
-
-### 6. loggedin_error_message
-
-This filter hook changes the error message when the limit is reached and the current login request is blocked.
-
-#### Parameters
-
-* `message`: The default error message.
-
-#### Sample Usage
 
 ```php
-add_filter( 'loggedin_error_message', 'my_custom_error_message');
-
-function my_custom_error_message( $message ) {
-   return 'My custom error message';
-}
+// Allow a specific list of user ids unlimited sessions.
+add_filter( 'loggedin_bypass', function ( $bypass, $user_id ) {
+    return in_array( (int) $user_id, array( 1, 2, 5 ), true );
+}, 10, 2 );
 ```
 
-## Login Session Duration
+### `loggedin_error_message`
 
-The duration of a login session is determined by WordPress's default settings.
-
-* If the "Remember Me" box is checked during login, the session will last for 14 days.
-* If the "Remember Me" box is not checked, the session will last for 2 days.
-
-You can customize this duration using the `auth_cookie_expiration` filter. Here's an example of how to set the session to one month:
+Filters the error message rendered on wp-login when a user is blocked by
+**Block New** mode.
 
 ```php
-function custom_auth_cookie_expiration( $expire ) {
-    return MONTH_IN_SECONDS; // Sets the session to one month
-}
-
-add_filter( 'auth_cookie_expiration', 'custom_auth_cookie_expiration' );
+apply_filters( 'loggedin_error_message', string $message );
 ```
+
+```php
+add_filter( 'loggedin_error_message', function ( $message ) {
+    return __( 'Your account is already signed in elsewhere. Sign out from another device to continue.', 'my-plugin' );
+} );
+```
+
+## JavaScript hooks
+
+Loggedin's admin UI exposes one extension point via `@wordpress/hooks`.
+
+### `loggedin.settings.panels`
+
+Filters the array of extra `PanelBody` components rendered on the
+**Settings** tab, after the General Settings panel and before the Force
+Logout panel.
+
+```js
+import { addFilter } from '@wordpress/hooks';
+
+addFilter(
+    'loggedin.settings.panels',
+    'my-addon/my-panel',
+    ( panels ) => [
+        ...panels,
+        {
+            id: 'my-addon-panel',
+            Component: MyAddonPanel,
+        },
+    ]
+);
+```
+
+Each entry must be `{ id: string, Component: ReactComponent }`. Entries
+without a stable `id` are dropped so a later add-on can replace a panel
+with the same id. The order in the returned array is the render order.
+
+See [Adding a custom Settings panel](#adding-a-custom-settings-panel)
+below for the full recipe.
+
+## REST API
+
+Every Loggedin route lives under the `loggedin/v1` namespace. All routes
+require the `manage_options` capability — they're admin tools, not public
+endpoints. The standard `X-WP-Nonce` header is required for browser-side
+calls.
+
+### Settings endpoints
+
+#### `GET /loggedin/v1/settings`
+
+Returns the full settings array, merged with defaults.
+
+```bash
+curl -X GET https://example.com/wp-json/loggedin/v1/settings \
+  -u admin:application-password
+```
+
+Response:
+
+```json
+{ "maximum": 5, "logic": "logout_oldest" }
+```
+
+#### `POST /loggedin/v1/settings`
+
+Updates the settings. Partial payloads are supported — any omitted key
+keeps its current value.
+
+```bash
+curl -X POST https://example.com/wp-json/loggedin/v1/settings \
+  -u admin:application-password \
+  -H 'Content-Type: application/json' \
+  -d '{"maximum": 3, "logic": "block"}'
+```
+
+Response: the full settings array after the update.
+
+| Body field | Type | Validation |
+| --- | --- | --- |
+| `maximum` | integer | Minimum `1`. Clamped at the schema boundary. |
+| `logic` | string | Enum: `allow`, `logout_oldest`, `block`. |
+
+::: tip Two ways to read / write settings
+The React UI uses `/wp/v2/settings` (core-data) because the option is
+registered with `show_in_rest`. The `/loggedin/v1/settings` endpoint
+exists as a stable, plugin-scoped surface for CLI recipes, automation, or
+third-party integrations that prefer the namespaced URL.
+:::
+
+### Sessions endpoints
+
+#### `POST /loggedin/v1/sessions/destroy`
+
+Force-logout every session for a user. Powers the **Force Logout** panel.
+
+```bash
+curl -X POST https://example.com/wp-json/loggedin/v1/sessions/destroy \
+  -u admin:application-password \
+  -H 'Content-Type: application/json' \
+  -d '{"user": "jdoe"}'
+```
+
+| Body field | Type | Description |
+| --- | --- | --- |
+| `user` | string | Required. User id, email, or login. See [Manage Sessions](/loggedin/manage-sessions#user). |
+
+Success response (200):
+
+```json
+{
+  "success": true,
+  "user": { "id": 7, "login": "jdoe", "display_name": "Jane Doe" }
+}
+```
+
+Errors:
+
+| Status | Code | Cause |
+| --- | --- | --- |
+| `400` | `missing_identifier` | Empty `user` field. |
+| `404` | `user_not_found` | No user matched the identifier. |
+
+This endpoint also fires
+[`loggedin_destroy_all_sessions`](#loggedin_destroy_all_sessions) on
+success.
+
+### Add-ons endpoints
+
+#### `GET /loggedin/v1/addons`
+
+Returns the decorated addon catalogue. Cached server-side for up to a
+day; pass through `POST /addons/refresh` to bust the cache.
+
+```bash
+curl -X GET https://example.com/wp-json/loggedin/v1/addons \
+  -u admin:application-password
+```
+
+Response shape:
+
+```json
+{
+  "items": [
+    {
+      "id": 19616,
+      "title": "Real-time Logout",
+      "is_premium": true,
+      "is_active": true,
+      "is_license_active": false,
+      "license_key": "",
+      "...": "additional fields"
+    }
+  ]
+}
+```
+
+#### `POST /loggedin/v1/addons/refresh`
+
+Force-refreshes the catalogue from the Freemius backend, bypassing the
+SDK's cache.
+
+#### `POST /loggedin/v1/addons/{id}/license`
+
+Activates a license key against the add-on with the given Freemius id.
+
+```bash
+curl -X POST https://example.com/wp-json/loggedin/v1/addons/19616/license \
+  -u admin:application-password \
+  -H 'Content-Type: application/json' \
+  -d '{"key": "sk_abc123…"}'
+```
+
+| Body field | Type | Description |
+| --- | --- | --- |
+| `key` | string | Required. The license key to activate. |
+
+#### `DELETE /loggedin/v1/addons/{id}/license`
+
+Deactivates the active license for the add-on.
+
+```bash
+curl -X DELETE https://example.com/wp-json/loggedin/v1/addons/19616/license \
+  -u admin:application-password
+```
+
+Both license endpoints return the freshly-decorated catalogue row on
+success and `WP_Error` with `400` on failure.
+
+## Recipes
+
+### Adding a custom Settings panel
+
+This is what every official add-on does. The flow is:
+
+1. Register a new site option with `show_in_rest`.
+2. Enqueue a small React bundle on the Loggedin admin screen
+   (`users_page_loggedin`).
+3. Use `addFilter( 'loggedin.settings.panels', ... )` to inject a
+   `PanelBody`.
+4. Read / write the option through
+   `useEntityProp( 'root', 'site', 'your_option_key' )`.
+
+The parent's **Save Changes** button automatically flushes every edited
+site-entity property in one POST, so your panel participates in the save
+flow with no extra wiring.
+
+Minimal React panel:
+
+```js
+import { addFilter } from '@wordpress/hooks';
+import { PanelBody, PanelRow, ToggleControl } from '@wordpress/components';
+import { useEntityProp } from '@wordpress/core-data';
+import { __ } from '@wordpress/i18n';
+
+const MyPanel = () => {
+    const [ value, setValue ] = useEntityProp(
+        'root',
+        'site',
+        'my_addon_option'
+    );
+
+    return (
+        <PanelBody title={ __( 'My Add-on', 'my-addon' ) } initialOpen>
+            <PanelRow>
+                <ToggleControl
+                    label={ __( 'Enable thing', 'my-addon' ) }
+                    checked={ !! value }
+                    onChange={ setValue }
+                />
+            </PanelRow>
+        </PanelBody>
+    );
+};
+
+addFilter(
+    'loggedin.settings.panels',
+    'my-addon/my-panel',
+    ( panels ) => [ ...panels, { id: 'my-addon', Component: MyPanel } ]
+);
+```
+
+Matching PHP — register the option so `useEntityProp` can find it:
+
+```php
+add_action( 'init', function () {
+    register_setting( 'loggedin', 'my_addon_option', array(
+        'type'         => 'boolean',
+        'default'      => false,
+        'show_in_rest' => array(
+            'schema' => array( 'type' => 'boolean' ),
+        ),
+    ) );
+} );
+```
+
+Look at the [`loggedin-realtime-logout`](https://github.com/Joel-James/loggedin-realtime-logout)
+and [`loggedin-limit-per-role`](https://github.com/Joel-James/loggedin-limit-per-role)
+source for full working examples.
+
+### Bypassing the limit for a service account
+
+```php
+add_filter( 'loggedin_bypass', function ( $bypass, $user_id ) {
+    $user = get_user_by( 'id', $user_id );
+    return $user && 'service-account' === $user->user_login;
+}, 10, 2 );
+```
+
+### Overriding the limit per capability
+
+```php
+add_filter( 'loggedin_reached_limit', function ( $reached, $user_id, $count ) {
+    if ( user_can( $user_id, 'manage_woocommerce' ) ) {
+        // Shop managers get 10 concurrent sessions.
+        return $count >= 10;
+    }
+
+    return $reached;
+}, 10, 3 );
+```
+
+### Reacting to admin force-logouts
+
+```php
+add_action( 'loggedin_destroy_all_sessions', function ( $user_id ) {
+    do_action(
+        'my_app/user_logged_out',
+        $user_id,
+        array( 'source' => 'loggedin' )
+    );
+} );
+```
+
+## Session duration
+
+Session length is controlled by WordPress, not by Loggedin:
+
+- **"Remember Me" checked:** session lasts 14 days.
+- **Not checked:** session lasts 2 days.
+
+To customise the duration use WordPress's standard `auth_cookie_expiration`
+filter:
+
+```php
+add_filter( 'auth_cookie_expiration', function () {
+    return MONTH_IN_SECONDS; // 30 days for everyone.
+} );
+```
+
+This affects WordPress globally — Loggedin reads `WP_Session_Tokens` for
+the count and doesn't care how long each individual session is configured
+to last.
 
 ::: info Need help?
-If you think something is missing or need help extending Loggedin, feel free to [contact us](https://duckdev.com/contact/).
+If you think a hook is missing or you need help extending Loggedin,
+[reach out via the contact form](https://duckdev.com/contact/) — we use
+these conversations to decide what new extension points to add.
 :::
