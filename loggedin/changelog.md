@@ -13,6 +13,7 @@ history lives here.
 ### Added
 
 * JavaScript filter [`loggedin.admin.tabs`](/loggedin/developer-docs#loggedin-admin-tabs) — add-ons can register their own React component as a tab in the Loggedin admin nav. Supports `before` / `after` positioning hints and same-key replacement of built-in tabs.
+* Cross-sell banner on the Force Logout panel, routed through the new [`loggedin.settings.force_logout.cross_sell`](/loggedin/developer-docs#loggedin-settings-force-logout-cross-sell) filter — add-ons return `null` (or their own React node) to hide / replace the default promo.
 
 ### Improved
 
