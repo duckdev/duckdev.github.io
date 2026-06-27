@@ -413,9 +413,10 @@ add_filter( 'loggedin_error_message', function ( $message ) {
 
 ## JavaScript hooks
 
-Loggedin's admin UI exposes two extension points via `@wordpress/hooks` —
-one for adding a `PanelBody` to the Settings tab, and one for adding a
-whole new tab to the admin nav.
+Loggedin's admin UI exposes three extension points via
+`@wordpress/hooks` — one for adding a whole new tab to the admin nav,
+one for adding a `PanelBody` to the Settings tab, and one for replacing
+the Force Logout cross-sell banner.
 
 ### `loggedin.admin.tabs`
 
@@ -491,6 +492,37 @@ with the same id. The order in the returned array is the render order.
 
 See [Adding a custom Settings panel](#adding-a-custom-settings-panel)
 below for the full recipe.
+
+### `loggedin.settings.force_logout.cross_sell`
+
+Filters the cross-sell banner rendered at the bottom of the **Force
+Logout** panel. The parent plugin ships a default banner promoting the
+[Active Sessions](/loggedin/addons/active-sessions) add-on; that add-on
+hooks this filter to return `null` and hide the banner once it's
+installed.
+
+```js
+import { addFilter } from '@wordpress/hooks';
+
+addFilter(
+    'loggedin.settings.force_logout.cross_sell',
+    'my-addon/suppress-cross-sell',
+    () => null
+);
+```
+
+Return:
+
+| Value | Effect |
+| --- | --- |
+| `null` | Hide the default banner entirely. |
+| A React node | Replace the default banner with your own. |
+| _anything else_ | Falls through to the default. |
+
+This is the same hook contract the 404 to 301 plugin's add-ons use to
+suppress their own promo banners — keep the wrapper as a `PanelRow` with
+`className="loggedin-cross-sell"` and an inner `Notice` so your
+replacement inherits the shared spacing rules.
 
 ## REST API
 
