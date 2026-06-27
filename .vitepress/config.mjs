@@ -49,13 +49,14 @@ export default defineConfig({
 				items: [
 					{ text: 'Getting Started', link: '/loggedin/getting-started' },
 					{ text: 'General Settings', link: '/loggedin/general-settings' },
-					{ text: 'Manage Sessions', link: '/loggedin/manage-sessions' },
+					{ text: 'Force Logout', link: '/loggedin/force-logout' },
 					{
 						text: 'Add-ons',
 						base: '/loggedin/addons',
 						collapsed: true,
 						items: [
 							{ text: 'Overview', link: '/' },
+							{ text: 'Active Sessions', link: '/active-sessions' },
 							{ text: 'Real-time Logout', link: '/realtime-logout' },
 							{ text: 'Limit Per User', link: '/limit-per-user' },
 							{ text: 'Limit Per Role', link: '/limit-per-role' },

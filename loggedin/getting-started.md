@@ -49,9 +49,10 @@ lets you exempt specific users or roles from the check entirely.
 - [General Settings](/loggedin/general-settings) — the concurrent-session
   limit and the three login-logic modes (**Logout Oldest**, **Logout All**,
   **Block New**).
-- [Manage Sessions](/loggedin/manage-sessions) — the admin-facing Force
-  Logout panel for clearing every active session for a user.
-- [Add-ons](/loggedin/addons/) — first-party extensions (Real-time Logout,
-  Limit Per User, Limit Per Role) and how to install / license them.
+- [Force Logout](/loggedin/force-logout) — the admin-facing panel for
+  clearing every active session for a user.
+- [Add-ons](/loggedin/addons/) — first-party extensions (Active Sessions,
+  Real-time Logout, Limit Per User, Limit Per Role) and how to install /
+  license them.
 - [Developer Docs](/loggedin/developer-docs) — every PHP hook, JS slot, and
   REST endpoint Loggedin exposes.

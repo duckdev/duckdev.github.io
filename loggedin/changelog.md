@@ -8,6 +8,21 @@ Full release history for **Loggedin**. The plugin's bundled
 `readme.txt` keeps only the latest couple of releases; the complete
 history lives here.
 
+## 3.0.1
+
+### Added
+
+* JavaScript filter [`loggedin.admin.tabs`](/loggedin/developer-docs#loggedin-admin-tabs) — add-ons can register their own React component as a tab in the Loggedin admin nav. Supports `before` / `after` positioning hints and same-key replacement of built-in tabs.
+
+### Improved
+
+* Add-on card layout now matches the 404 to 301 plugin — primary CTA pinned to the left of the footer, **More details** link on the right, title-cased license button labels.
+
+### Fixed
+
+* The v2 → v3 settings migration never ran on existing installs, leaving legacy option keys in place after the upgrade.
+* CI matrix dropped the PHP 8.3 × WordPress 6.0 combination — that combination is unsupported by core and was failing the build for no useful signal.
+
 ## 3.0.0
 
 ### Added

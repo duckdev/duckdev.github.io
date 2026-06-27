@@ -48,7 +48,7 @@ add-on. All live on `DuckDev\Loggedin\Plugin`:
 
 | Constant | Value | Purpose |
 | --- | --- | --- |
-| `VERSION` | `2.0.4` | Current plugin version. |
+| `VERSION` | `3.0.1` | Current plugin version. |
 | `SLUG` | `loggedin` | Plugin slug; matches the Freemius and i18n slugs. |
 | `TEXT_DOMAIN` | `loggedin` | Translation text domain. |
 | `OPTION_KEY` | `loggedin_settings` | WP option name where every plugin setting is stored. |
@@ -147,8 +147,7 @@ trigger it:
 
 1. The **Logout All** (`allow`) login logic, when a new login displaces
    every existing session.
-2. The admin-facing **Force Logout** panel under
-   [Manage Sessions](/loggedin/manage-sessions).
+2. The admin-facing [Force Logout](/loggedin/force-logout) panel.
 
 ```php
 do_action( 'loggedin_destroy_all_sessions', int $user_id );
@@ -414,7 +413,55 @@ add_filter( 'loggedin_error_message', function ( $message ) {
 
 ## JavaScript hooks
 
-Loggedin's admin UI exposes one extension point via `@wordpress/hooks`.
+Loggedin's admin UI exposes two extension points via `@wordpress/hooks` —
+one for adding a `PanelBody` to the Settings tab, and one for adding a
+whole new tab to the admin nav.
+
+### `loggedin.admin.tabs`
+
+Filters the array of tabs rendered along the top of the
+**Users → Loggedin** admin. Add-ons inject their own React component as
+a tab through this filter — same deferred-apply pattern as
+[`loggedin.settings.panels`](#loggedin-settings-panels), so it's safe
+to call from a separately-bundled add-on script.
+
+```js
+import { addFilter } from '@wordpress/hooks';
+
+addFilter(
+    'loggedin.admin.tabs',
+    'my-addon/my-tab',
+    ( tabs ) => [
+        ...tabs,
+        {
+            key: 'my-tab',
+            label: __( 'My Tab', 'my-addon' ),
+            component: MyTabPage,
+            after: 'settings', // optional positioning
+        },
+    ]
+);
+```
+
+Each entry must be `{ key, label, component }` with two optional
+position hints:
+
+| Field | Type | Description |
+| --- | --- | --- |
+| `key` | string | Stable tab id. An add-on that uses the same `key` as a built-in tab (`settings`, `addons`, `support`) **replaces** that tab — useful for white-label builds. |
+| `label` | string | Translatable text rendered in the nav. |
+| `component` | React component | The body of the tab. |
+| `wide` | boolean | Optional. `true` opts the tab into the full-width layout (used by the Add-ons grid). |
+| `before` | string | Optional. Insert this tab immediately before the tab with this key. |
+| `after` | string | Optional. Insert immediately after the tab with this key. Ignored when `before` is set. |
+| _neither_ | — | The tab is appended to the end. |
+
+The filter runs inside a `useMemo` on every render of the admin shell,
+so registering the filter from an add-on bundle that loads after the
+core bundle still works.
+
+The [Active Sessions](/loggedin/addons/active-sessions) add-on uses this
+filter to inject its own tab between **Settings** and **Addons**.
 
 ### `loggedin.settings.panels`
 
@@ -510,7 +557,7 @@ curl -X POST https://example.com/wp-json/loggedin/v1/sessions/destroy \
 
 | Body field | Type | Description |
 | --- | --- | --- |
-| `user` | string | Required. User id, email, or login. See [Manage Sessions](/loggedin/manage-sessions#user). |
+| `user` | string | Required. User id, email, or login. See [Force Logout](/loggedin/force-logout#user). |
 
 Success response (200):
 

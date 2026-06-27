@@ -124,4 +124,4 @@ JS slot.
 The button is disabled until you actually change something and shows a busy
 state while the save is in flight. The Force Logout panel has its own
 button and does **not** participate in this save flow — see
-[Manage Sessions](/loggedin/manage-sessions).
+[Force Logout](/loggedin/force-logout).

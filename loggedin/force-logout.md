@@ -1,8 +1,8 @@
 ---
-title: Manage Sessions
+title: Force Logout
 ---
 
-# Manage Sessions
+# Force Logout
 
 The **Force Logout** panel sits at the bottom of the
 [Settings tab](/loggedin/general-settings) — **Users → Loggedin → Settings**.

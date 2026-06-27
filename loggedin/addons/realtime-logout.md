@@ -76,5 +76,5 @@ flushes every pending change on the tab in a single REST call.
   — the parent's action that fires when admins use Force Logout. Real-time
   Logout is what makes that logout visible to the user without them having
   to refresh.
-- [Manage Sessions](/loggedin/manage-sessions) — the admin-facing Force
+- [Force Logout](/loggedin/force-logout) — the admin-facing Force
   Logout panel.
