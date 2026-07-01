@@ -1,44 +1,6 @@
-# WP Cache Helper
+# Usage
 
-WP Cache Helper is a small WordPress library that wraps the object cache and transient APIs with a callback-style `remember()` helper, group-flush support for the object cache (which [core does not provide](https://core.trac.wordpress.org/ticket/4476)), and per-prefix scoping so multiple consumers on the same site never collide.
-
-Inspired by [WP Cache Remember](https://github.com/stevegrunwell/wp-cache-remember).
-
-## Requirements
-
-- PHP 7.4+
-- WordPress 5.0+
-- Composer
-
-## Installation
-
-```console
-composer require duckdev/wp-cache-helper
-```
-
-Classes autoload under the `DuckDev\Cache\` namespace via PSR-4.
-
-## Initialisation
-
-Each container instance is scoped to a single prefix. Pass any non-empty string the first time you ask for it; the same prefix returns the same instance on subsequent calls:
-
-```php
-$cache = \DuckDev\Cache\Cache::get_instance( 'my_plugin' );
-```
-
-You can also instantiate directly (useful for tests):
-
-```php
-$cache = new \DuckDev\Cache\Cache( 'my_plugin' );
-```
-
-Every key, group, and the `{prefix}_can_cache` toggle filter are namespaced under the supplied prefix.
-
-## Options
-
-There are no runtime options — the only configuration is the prefix passed to the constructor. Behaviour is instead tuned via the filter below.
-
-## Methods
+## Available methods
 
 | Method | Backed by | Purpose |
 | --- | --- | --- |
@@ -52,19 +14,7 @@ There are no runtime options — the only configuration is the prefix passed to 
 
 Every callback-based helper checks the callback return with `is_wp_error()` and skips caching when a `WP_Error` is returned, so a transient API failure is not memorised.
 
-## Filters
-
-| Filter | Arguments | Use |
-| --- | --- | --- |
-| `{prefix}_can_cache` | `bool $enabled, string $type` | Return `false` to disable caching. `$type` is `'object'` or `'transient'` so the two can be toggled independently. |
-
-## Actions
-
-The library does not fire any actions.
-
-## Example usage
-
-### `remember()` — object-cache read-through
+## `remember()` — object-cache read-through
 
 ```php
 $cache = \DuckDev\Cache\Cache::get_instance( 'my_plugin' );
@@ -80,7 +30,7 @@ $posts = $cache->remember( 'latest_posts', function () {
 
 Unlike a naive `wp_cache_get()`-then-fall-back pattern, `remember()` distinguishes a legitimately cached `0`, `''`, `[]`, or `false` from a true miss — the callback only runs when nothing was cached.
 
-### `forget()` — one-shot read
+## `forget()` — one-shot read
 
 ```php
 $error = $cache->forget( 'form_errors', 'flash', false );
@@ -90,7 +40,7 @@ if ( $error ) {
 }
 ```
 
-### `persist()` — transient read-through
+## `persist()` — transient read-through
 
 ```php
 $cache->persist( 'latest_tweets_' . $user_id, function () use ( $user_id ) {
@@ -104,13 +54,19 @@ Pass `true` for the third argument to use site-wide (multisite) transients.
 Transients use boolean `false` as the miss sentinel, so a legitimately cached `false` value is indistinguishable from a miss. Reach for `remember()` if you need to cache `false`.
 :::
 
-### `flush_group()`
+## `flush_group()`
 
 ```php
 $cache->flush_group( 'queries' );
 ```
 
-Internally increments a per-group version sentinel — old entries become unreadable on next access without touching the rest of the object cache.
+On WP 6.1+ with a persistent object cache backend that advertises `flush_group` support (via `wp_cache_supports( 'flush_group' )`), this delegates directly to `wp_cache_flush_group()`. Otherwise it falls back to incrementing a per-group version sentinel — old entries become unreadable on next access without touching the rest of the object cache.
+
+## Filters
+
+| Filter | Arguments | Use |
+| --- | --- | --- |
+| `{prefix}_can_cache` | `bool $enabled, string $type` | Return `false` to disable caching. `$type` is `'object'` or `'transient'` so the two can be toggled independently. |
 
 ### Disabling caching for debugging
 

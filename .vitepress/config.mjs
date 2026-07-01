@@ -128,10 +128,50 @@ export default defineConfig({
 				text: 'WordPress Libraries',
 				items: [
 					{ text: 'Overview', link: '/wp-libraries/' },
-					{ text: 'Freemius Plugin Licensing', link: '/wp-libraries/freemius-plugin-licensing' },
-					{ text: 'WP Cache Helper', link: '/wp-libraries/wp-cache-helper' },
-					{ text: 'WP Queue Process', link: '/wp-libraries/wp-queue-process' },
-					{ text: 'WP Review Notice', link: '/wp-libraries/wp-review-notice' },
+					{
+						text: 'Freemius Plugin Licensing',
+						base: '/wp-libraries/freemius-plugin-licensing',
+						collapsed: true,
+						items: [
+							{ text: 'Overview', link: '/overview' },
+							{ text: 'Installation', link: '/installation' },
+							{ text: 'Usage', link: '/usage' },
+							{ text: 'Changelog', link: '/changelog' },
+						]
+					},
+					{
+						text: 'WP Cache Helper',
+						base: '/wp-libraries/wp-cache-helper',
+						collapsed: true,
+						items: [
+							{ text: 'Overview', link: '/overview' },
+							{ text: 'Installation', link: '/installation' },
+							{ text: 'Usage', link: '/usage' },
+							{ text: 'Changelog', link: '/changelog' },
+						]
+					},
+					{
+						text: 'WP Queue Process',
+						base: '/wp-libraries/wp-queue-process',
+						collapsed: true,
+						items: [
+							{ text: 'Overview', link: '/overview' },
+							{ text: 'Installation', link: '/installation' },
+							{ text: 'Usage', link: '/usage' },
+							{ text: 'Changelog', link: '/changelog' },
+						]
+					},
+					{
+						text: 'WP Review Notice',
+						base: '/wp-libraries/wp-review-notice',
+						collapsed: true,
+						items: [
+							{ text: 'Overview', link: '/overview' },
+							{ text: 'Installation', link: '/installation' },
+							{ text: 'Usage', link: '/usage' },
+							{ text: 'Changelog', link: '/changelog' },
+						]
+					},
 				]
 			},
 			{
