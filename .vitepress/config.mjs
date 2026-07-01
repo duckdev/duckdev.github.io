@@ -125,6 +125,16 @@ export default defineConfig({
 				]
 			},
 			{
+				text: 'WordPress Libraries',
+				items: [
+					{ text: 'Overview', link: '/wp-libraries/' },
+					{ text: 'Freemius Plugin Licensing', link: '/wp-libraries/freemius-plugin-licensing' },
+					{ text: 'WP Cache Helper', link: '/wp-libraries/wp-cache-helper' },
+					{ text: 'WP Queue Process', link: '/wp-libraries/wp-queue-process' },
+					{ text: 'WP Review Notice', link: '/wp-libraries/wp-review-notice' },
+				]
+			},
+			{
 				text: 'About Us',
 				link: '/about',
 			},
