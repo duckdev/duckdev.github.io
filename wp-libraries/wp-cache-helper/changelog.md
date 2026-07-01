@@ -1,6 +1,6 @@
 # Changelog
 
-## 2.0.1
+## 2.0.2
 
 ### Added
 - `ObjectCache::flush_group()` now delegates to core `wp_cache_flush_group()` on WP 6.1+ backends that advertise support via `wp_cache_supports( 'flush_group' )`. The version-sentinel workaround remains the fallback for backends that don't.
@@ -9,6 +9,11 @@
 ### Changed
 - Minimum WordPress version bumped from **5.0** to **6.1**.
 - `ObjectCache` refactored: public methods reduced to thin dispatchers; native and fallback paths split into single-responsibility private helpers.
+
+## 2.0.1
+
+### Fixed
+- PHP 8.4 implicit-nullable deprecation on `ObjectCache::get()`.
 
 ## 2.0.0
 
