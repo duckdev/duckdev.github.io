@@ -6,6 +6,11 @@
   --vp-home-hero-image-filter: blur(44px);
 }
 
+.VPHero .name,
+.VPHero .text {
+  font-weight: 800;
+}
+
 @media (min-width: 640px) {
   :root {
     --vp-home-hero-image-filter: blur(56px);
