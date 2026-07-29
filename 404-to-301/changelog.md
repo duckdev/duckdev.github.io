@@ -8,6 +8,30 @@ Full release history for **404 to 301**. The plugin's bundled
 `readme.txt` keeps only the latest couple of releases; the complete
 history lives here.
 
+## 4.0.3
+
+### Added
+
+* Rich per-column filtering on the Logs and Redirects tables, built on `@wordpress/dataviews` v16. Text columns support `is`, `isNot`, `isAny`, `isNone`, `contains`, `notContains` and `startsWith`; numeric columns add `lessThan`, `greaterThan`, `lessThanOrEqual`, `greaterThanOrEqual` and `between`.
+* Filterable log fields: URL, referrer, IP, hits and status. Filterable redirect fields: source, target URL, redirect type, match type, active state and hits.
+* IP filtering works against the packed `VARBINARY` column — values are packed with `inet_pton()` at the mapper, so only the equality and membership operators are offered.
+
+### Improved
+
+* Table columns are center-aligned except long-text and primary columns, which stay left-aligned for readability.
+* Licensed add-on badges are green, Premium badges purple.
+* `bin/pack.sh` prunes development files from the staged vendor tree before building the release zip.
+
+### Fixed
+
+* Center-aligned table columns are no longer clipped by the truncation styles.
+
+### Developer
+
+* **Breaking (REST):** the `status`, `date_from` and `date_to` query params on `GET /404-to-301/v1/logs`, and `match_type` / `redirect_type` on `GET /404-to-301/v1/redirects`, have been removed. All filtering now goes through a single `filters` param taking the DataViews v16 shape: `[ { field, operator, value }, … ]`.
+* New `Filter_Mapper` class validates each filter against a per-field operator allowlist and translates it into BerlinDB query args. The allowlists are passed in by the caller, so the same mapper drives both endpoints.
+* Upgraded `@wordpress/dataviews` to 16.0.1 and `@wordpress/scripts` to 32.4.1.
+
 ## 4.0.2
 
 ### Improved
