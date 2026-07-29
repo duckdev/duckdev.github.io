@@ -180,6 +180,48 @@ Note: this fires **only** in `logout_oldest` mode. In `allow` (Logout
 All) mode you get [`loggedin_destroy_all_sessions`](#loggedin_destroy_all_sessions)
 instead.
 
+### `loggedin_destroy_session`
+
+Fires when a single named session is destroyed, rather than all of a
+user's sessions. Currently triggered by
+[`wp loggedin sessions destroy --token=`](/loggedin/wp-cli#wp-loggedin-sessions-destroy).
+
+```php
+do_action( 'loggedin_destroy_session', int $user_id, string $token );
+```
+
+| Parameter | Type | Description |
+| --- | --- | --- |
+| `$user_id` | int | User whose session was destroyed. |
+| `$token` | string | Hashed token of the destroyed session. The raw token is never exposed. |
+
+```php
+add_action( 'loggedin_destroy_session', function ( $user_id, $token ) {
+    // Record which device was signed out.
+}, 10, 2 );
+```
+
+Since 3.1.0.
+
+### `loggedin_cli_init`
+
+Fires after Loggedin registers its own [WP-CLI commands](/loggedin/wp-cli),
+and only on WP-CLI requests. Add-ons should register subcommands here —
+by this point the parent `wp loggedin` command exists, so a nested
+command name resolves correctly.
+
+```php
+do_action( 'loggedin_cli_init' );
+```
+
+```php
+add_action( 'loggedin_cli_init', function () {
+    WP_CLI::add_command( 'loggedin my-addon', My_Addon_Command::class );
+} );
+```
+
+Since 3.1.0.
+
 ## Filters
 
 ### `loggedin_settings_defaults`

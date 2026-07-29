@@ -8,6 +8,21 @@ Full release history for **Loggedin**. The plugin's bundled
 `readme.txt` keeps only the latest couple of releases; the complete
 history lives here.
 
+## 3.1.0
+
+### Added
+
+* [WP-CLI support](/loggedin/wp-cli). `wp loggedin sessions` lists, counts and destroys a user's active sessions; `wp loggedin settings` reads and writes plugin settings. The `<user>` argument accepts an ID, username or email address, the same as the Force Logout panel.
+* `wp loggedin sessions destroy <user> --token=<hash>` signs a user out of a single device instead of all of them, using the token hash from `sessions list`.
+* Action [`loggedin_destroy_session`](/loggedin/developer-docs#loggedin_destroy_session) — fires when an individual session is destroyed, complementing `loggedin_destroy_all_sessions`.
+* Action [`loggedin_cli_init`](/loggedin/developer-docs#loggedin_cli_init) — add-ons can register their own subcommands under the `wp loggedin` namespace.
+
+### Improved
+
+* `wp loggedin settings set` validates through the same sanitizer as the REST API and refuses a value it would reject, instead of storing the default. Without this, a typo such as `settings set logic nonsense` would silently reset a site from **Block New** back to the default **Logout All**, loosening the limit.
+* `--token` passed without a value is rejected rather than falling through to "destroy every session" — an unset shell variable can no longer sign a user out everywhere.
+* CLI commands are registered only on WP-CLI requests, so the command classes are never loaded during a normal page load.
+
 ## 3.0.2
 
 ### Added

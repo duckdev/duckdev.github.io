@@ -53,6 +53,7 @@ export default defineConfig({
           { text: 'Getting Started', link: '/loggedin/getting-started' },
           { text: 'General Settings', link: '/loggedin/general-settings' },
           { text: 'Force Logout', link: '/loggedin/force-logout' },
+          { text: 'WP-CLI', link: '/loggedin/wp-cli' },
           {
             text: 'Add-ons',
             base: '/loggedin/addons',

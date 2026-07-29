@@ -59,6 +59,12 @@ While the request is in flight the button shows a busy state and is
 disabled. A success snackbar appears in the lower-left corner once the
 sessions are cleared, naming the user that was logged out.
 
+::: tip Same thing from the command line
+`wp loggedin sessions destroy <user>` does exactly this, and
+`--token=<hash>` narrows it to a single device rather than all of them.
+See the [WP-CLI reference](/loggedin/wp-cli#wp-loggedin-sessions-destroy).
+:::
+
 ::: info Effect on the user
 The user being force-logged-out isn't notified. The next page they try to
 load (or the next REST / AJAX request from an already-open tab) will

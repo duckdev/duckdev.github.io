@@ -51,6 +51,8 @@ lets you exempt specific users or roles from the check entirely.
   **Block New**).
 - [Force Logout](/loggedin/force-logout) — the admin-facing panel for
   clearing every active session for a user.
+- [WP-CLI](/loggedin/wp-cli) — manage sessions and settings from the
+  command line.
 - [Add-ons](/loggedin/addons/) — first-party extensions (Active Sessions,
   Real-time Logout, Limit Per User, Limit Per Role) and how to install /
   license them.
