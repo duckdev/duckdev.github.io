@@ -19,6 +19,7 @@ history lives here.
 
 ### Improved
 
+* Renamed to **Loggedin - Session Manager, Limit Concurrent Logins & Force Logout**, reflecting the plugin's broader scope as a session manager rather than a limiter alone. The plugin slug, settings, hooks and behaviour are all unchanged — only the display name differs, so the entry in your Plugins list will read differently after updating.
 * `wp loggedin settings set` validates through the same sanitizer as the REST API and refuses a value it would reject, instead of storing the default. Without this, a typo such as `settings set logic nonsense` would silently reset a site from **Block New** back to the default **Logout All**, loosening the limit.
 * `--token` passed without a value is rejected rather than falling through to "destroy every session" — an unset shell variable can no longer sign a user out everywhere.
 * CLI commands are registered only on WP-CLI requests, so the command classes are never loaded during a normal page load.

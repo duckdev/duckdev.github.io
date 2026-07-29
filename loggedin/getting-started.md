@@ -4,12 +4,21 @@ title: Getting Started
 
 # Getting Started
 
-**Loggedin** caps the number of simultaneous WordPress sessions a single user
-account is allowed to hold. When a new login would exceed the cap, Loggedin
-either reshuffles the existing sessions to make room or rejects the login
-outright — your choice. It's the tool of choice when an account is being
+**Loggedin** is a session manager for WordPress. It gives you control over the
+login sessions your users hold — how many they can have, how long they last,
+and how to end them.
+
+Its core job is capping the number of simultaneous WordPress sessions a single
+user account is allowed to hold. When a new login would exceed the cap,
+Loggedin either reshuffles the existing sessions to make room or rejects the
+login outright — your choice. It's the tool of choice when an account is being
 shared more than it should be, or when compliance requires that a user only
 be signed in on one device at a time.
+
+Beyond the limit, the plugin can force-logout any user's sessions from the
+admin, and inspect or end individual sessions from
+[WP-CLI](/loggedin/wp-cli). The [Active Sessions](/loggedin/addons/active-sessions)
+add-on extends that into a live view of everyone signed in across the site.
 
 Once the core plugin is active you'll find a single page in wp-admin under
 **Users → Loggedin** with two tabs:
