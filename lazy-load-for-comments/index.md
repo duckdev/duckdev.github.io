@@ -4,12 +4,12 @@ description: Lazy Load for Comments — WordPress plugin documentation.
 head:
   - - meta
     - http-equiv: refresh
-      content: 0; url=/lazy-load-for-comments/loading-behaviour
+      content: 0; url=/lazy-load-for-comments/getting-started
   - - link
     - rel: canonical
-      href: https://docs.duckdev.com/lazy-load-for-comments/loading-behaviour
+      href: https://docs.duckdev.com/lazy-load-for-comments/getting-started
 ---
 
 # Lazy Load for Comments
 
-Redirecting to [Loading Behaviour](/lazy-load-for-comments/loading-behaviour)…
+Redirecting to [Getting Started](/lazy-load-for-comments/getting-started)…
