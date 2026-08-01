@@ -129,6 +129,10 @@ export default defineConfig({
         text: 'Lazy Load for Comments',
         items: [
           {
+            text: 'Getting Started',
+            link: '/lazy-load-for-comments/getting-started',
+          },
+          {
             text: 'Loading Behaviour',
             link: '/lazy-load-for-comments/loading-behaviour',
           },
