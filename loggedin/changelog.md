@@ -8,19 +8,6 @@ Full release history for **Loggedin**. The plugin's bundled
 `readme.txt` keeps only the latest couple of releases; the complete
 history lives here.
 
-## 3.2.0
-
-### Improved
-
-* Settings are read once per request and reused, instead of being rebuilt on every read. Cuts repeat work on each login check and admin page load.
-* Loggedin is now published under the **Foxe Labs** brand. Nothing about how the plugin works has changed.
-* Every link in the plugin points at the new foxelabs.com product pages and docs.foxelabs.com documentation.
-* Tested with WordPress 7.1.
-
-### Removed
-
-* The leftover **Loggedin** section on **Settings → General**. Pre-2.0 registered the plugin's options there; 2.0 replaced them with a one-line pointer to the new page. With 3.x well established, the pointer is gone — settings live under **Users → Loggedin**.
-
 ## 3.1.0
 
 ### Added
